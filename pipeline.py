@@ -432,7 +432,7 @@ def process_meeting(mdir: Path):
                 wavs[0].rename(mdir / "mic.wav")
             elif wavs:
                 lst = mdir / "miclist.txt"
-                lst.write_text("".join(f"file '{w}'\n" for w in wavs))
+                lst.write_text("".join(f"file '{w.resolve()}'\n" for w in wavs))
                 run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
                      "-f", "concat", "-safe", "0", "-i", str(lst),
                      "-c", "copy", str(mdir / "mic.wav")])
@@ -455,7 +455,7 @@ def process_meeting(mdir: Path):
                 wavs[0].rename(mdir / "system.wav")
             elif wavs:
                 lst = mdir / "syslist.txt"
-                lst.write_text("".join(f"file '{w}'\n" for w in wavs))
+                lst.write_text("".join(f"file '{w.resolve()}'\n" for w in wavs))
                 run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
                      "-f", "concat", "-safe", "0", "-i", str(lst),
                      "-c", "copy", str(mdir / "system.wav")])

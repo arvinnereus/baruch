@@ -429,7 +429,7 @@ def merge_meetings(body: dict):
             if not parts:
                 raise RuntimeError("no audio found in the selected meetings")
             lst = d / "parts.txt"
-            lst.write_text("".join(f"file '{w}'\n" for w in parts))
+            lst.write_text("".join(f"file '{w.resolve()}'\n" for w in parts))
             pipeline.run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
                           "-f", "concat", "-safe", "0", "-i", str(lst),
                           "-c", "copy", str(d / "meeting.wav")])
