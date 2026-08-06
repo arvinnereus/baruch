@@ -1,0 +1,24 @@
+# user data — recordings, transcripts, notes, voiceprints, settings (private!)
+data/
+
+# downloaded models (fetched by run.sh)
+models/
+
+# python env
+.venv/
+__pycache__/
+
+# compiled tools (built by run.sh)
+systemaudio
+voicemic
+menubar
+
+# logs & OS noise
+*.log
+.DS_Store
+
+# stray audio anywhere
+*.wav
+*.caf
+*.raw
+test-meeting-id.txt

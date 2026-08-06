@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LocalFellow</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<!-- Lucide-style icon sprite (24x24, stroke-based) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-record" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"/><rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><line x1="8" x2="16" y1="13" y2="13"/><line x1="8" x2="16" y1="17" y2="17"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></symbol>
+  </defs>
+</svg>
+
+<div id="app">
+  <aside id="sidebar">
+    <div class="side-head">
+      <span class="logo"><svg class="ic"><use href="#i-mic"/></svg> LocalFellow</span>
+      <span class="head-btns">
+        <button id="btn-ask" class="btn" aria-label="Ask your meetings">
+          <svg class="ic"><use href="#i-sparkles"/></svg><span class="lbl">Ask</span></button>
+        <button id="btn-new" class="btn primary" aria-label="New meeting">
+          <svg class="ic"><use href="#i-plus"/></svg><span class="lbl">New</span></button>
+      </span>
+    </div>
+    <div id="lib-search-wrap">
+      <svg class="ic search-ic" aria-hidden="true"><use href="#i-search"/></svg>
+      <input id="lib-search" placeholder="Search all meetings…" autocomplete="off"
+             aria-label="Search all meetings">
+    </div>
+    <div id="lib-results" hidden></div>
+    <div id="cal-section">
+      <div class="cal-head"><span><svg class="ic sm"><use href="#i-calendar"/></svg> Today</span>
+        <button id="cal-connect" class="linkbtn" aria-label="Connect Google Calendar">connect</button></div>
+      <div id="cal-events"></div>
+    </div>
+    <div id="meeting-list" aria-label="Meeting library">
+      <div class="mcard skel"><div class="sk sk-t"></div><div class="sk sk-s"></div></div>
+      <div class="mcard skel"><div class="sk sk-t"></div><div class="sk sk-s"></div></div>
+      <div class="mcard skel"><div class="sk sk-t"></div><div class="sk sk-s"></div></div>
+    </div>
+    <div class="side-foot">
+      <label class="upload-label"><svg class="ic sm"><use href="#i-upload"/></svg> Upload audio/video
+        <input type="file" id="upload-input" accept=".m4a,.wav,.mp3,.webm,.mp4,audio/*,video/*" hidden
+               aria-label="Upload audio or video file">
+      </label>
+      <div class="foot-row">
+        <button id="btn-voices" class="linkbtn"><svg class="ic sm"><use href="#i-user"/></svg> People &amp; voices</button>
+        <button id="btn-update" class="linkbtn" hidden><svg class="ic sm"><use href="#i-refresh"/></svg> <span class="lbl">Update ready</span></button>
+      </div>
+    </div>
+  </aside>
+
+  <main id="main">
+    <div id="cal-popup" hidden>
+      <div>
+        <b id="cal-popup-title"></b> is starting <span id="cal-popup-when"></span>
+        <div class="muted" id="cal-popup-att"></div>
+      </div>
+      <div class="popup-actions">
+        <button id="cal-popup-rec" class="btn record">
+          <svg class="ic sm"><use href="#i-record"/></svg><span class="lbl">Record now</span></button>
+        <button id="cal-popup-dismiss" class="btn subtle">Dismiss</button>
+      </div>
+    </div>
+
+    <div id="ask-view" hidden>
+      <h2><svg class="ic"><use href="#i-sparkles"/></svg> Ask your meetings</h2>
+      <p class="muted">Answers come from a local model over your transcripts — nothing leaves this Mac, no tokens used.</p>
+      <div id="ask-log"></div>
+      <form id="ask-form">
+        <input id="ask-input" placeholder="e.g. What was decided about the launch date?"
+               autocomplete="off" aria-label="Question about your meetings">
+        <button id="ask-send" class="btn primary" type="submit">Ask</button>
+      </form>
+    </div>
+
+    <div id="voices-view" hidden>
+      <h2><svg class="ic"><use href="#i-user"/></svg> People &amp; voices</h2>
+      <p class="muted">LocalFellow labels speakers by name when it recognizes their voice.
+        Enroll anyone below (they speak for 20 seconds), or just rename a speaker in any
+        transcript — that teaches their voice automatically. Everything stays on this Mac.</p>
+
+      <div class="v-block">
+        <h3>Your name</h3>
+        <div class="v-row"><span id="v-myname" class="v-name">not set</span>
+          <button id="v-setname" class="btn sm-btn">Change</button></div>
+        <p class="muted sm-note">Your mic channel on online calls is labelled with this name automatically.</p>
+      </div>
+
+      <div class="v-block">
+        <h3>Enrolled voices</h3>
+        <div id="v-list"><p class="muted">No voices enrolled yet.</p></div>
+      </div>
+
+      <div class="v-block">
+        <h3>Enroll a voice</h3>
+        <div class="v-row">
+          <input id="v-name" list="people-list" placeholder="Whose voice? e.g. Arvin, Chin"
+                 aria-label="Name of the person to enroll">
+          <button id="v-record" class="btn record">
+            <svg class="ic sm"><use href="#i-record"/></svg><span class="lbl">Record 20 s</span></button>
+        </div>
+        <div id="v-script">
+          <div class="script-head">Read this aloud, at your normal pace:</div>
+          <p>“Hello, my name is <b class="v-script-name">[your name]</b>, and this is my
+          voice sample for LocalFellow. In meetings I talk about plans, budgets, and
+          schedules — for example, thirty-five thousand dollars by the ninth of September.
+          The quick brown fox jumps over the lazy dog, while the five boxing wizards jump
+          quickly. I usually speak just like this: naturally, clearly, and at my own pace.”</p>
+          <p class="script-zh">If you also speak Mandarin in meetings, finish with:
+          “大家好，我是<b class="v-script-name">[your name]</b>，这是我的声音样本，我平时开会就是这样说话的。”</p>
+        </div>
+        <div id="v-progress" hidden><div id="v-bar"></div>
+          <span id="v-count">Speak now — 20 s…</span></div>
+        <p id="v-result" class="muted"></p>
+      </div>
+
+      <div class="v-block">
+        <h3>Test recognition</h3>
+        <div class="v-row">
+          <span class="muted">Speak for 5 seconds and see who LocalFellow hears.</span>
+          <button id="v-test" class="btn">
+            <svg class="ic sm"><use href="#i-mic"/></svg><span class="lbl">Test my voice</span></button>
+        </div>
+        <p id="v-test-result" class="muted"></p>
+      </div>
+    </div>
+
+    <div id="empty-state">
+      <div id="setup-card" hidden>
+        <h3>Set up LocalFellow</h3>
+        <div class="setup-item" data-step="name"><span class="setup-dot"></span>
+          <span>Set <b>your name</b> so your voice is labelled correctly</span>
+          <button class="btn sm-btn" id="setup-name">Set name</button></div>
+        <div class="setup-item" data-step="voice"><span class="setup-dot"></span>
+          <span><b>Enroll your voice</b> (20 s) for automatic recognition</span>
+          <button class="btn sm-btn" id="setup-voice">Enroll</button></div>
+        <div class="setup-item" data-step="cal"><span class="setup-dot"></span>
+          <span>Connect <b>Google Calendar</b> for one-click meeting recording</span>
+          <button class="btn sm-btn" id="setup-cal">Connect</button></div>
+        <div class="setup-item"><span class="setup-dot"></span>
+          <span>On first recording, macOS will ask for <b>microphone</b> and <b>screen-recording</b> permission — approve both</span></div>
+        <button class="linkbtn" id="setup-dismiss">Dismiss — I'm set up</button>
+      </div>
+      <h2>No meeting selected</h2>
+      <p>Create a new meeting to record in-person or online (Zoom / Google Meet),<br>
+         or upload an existing recording.</p>
+    </div>
+
+    <div id="detail" hidden>
+      <header id="detail-head">
+        <input id="m-title" class="title-input" spellcheck="false" aria-label="Meeting title">
+        <div id="m-sub"></div>
+        <div class="head-actions">
+          <select id="m-mode" aria-label="Recording mode">
+            <option value="inperson">In-person (mic)</option>
+            <option value="online">Online (system + mic)</option>
+          </select>
+          <select id="m-template" aria-label="AI note template" title="AI note template"></select>
+          <button id="btn-record" class="btn record">
+            <svg class="ic sm"><use href="#i-record"/></svg><span class="lbl">Record</span></button>
+          <button id="btn-pause" class="btn stop" hidden aria-label="Pause recording">
+            <svg class="ic sm"><use href="#i-pause"/></svg><span class="lbl">Pause</span></button>
+          <button id="btn-resume" class="btn record" hidden aria-label="Resume recording">
+            <svg class="ic sm"><use href="#i-play"/></svg><span class="lbl">Resume</span></button>
+          <button id="btn-stop" class="btn stop" hidden aria-label="Stop recording">
+            <svg class="ic sm"><use href="#i-stop"/></svg><span class="lbl">Stop</span></button>
+          <div class="menu-wrap">
+            <button id="btn-menu" class="btn subtle" aria-label="More actions" aria-haspopup="true">
+              <svg class="ic"><use href="#i-more"/></svg></button>
+            <div id="menu-pop" hidden role="menu">
+              <button id="btn-delete" role="menuitem">
+                <svg class="ic sm"><use href="#i-trash"/></svg> Move to trash</button>
+            </div>
+          </div>
+        </div>
+        <input id="m-context" class="context-input"
+               aria-label="Context and vocabulary for transcription"
+               placeholder="Context / vocabulary (people, product names, domain terms — improves transcription & notes)">
+      </header>
+
+      <div id="rec-banner" hidden>
+        <span class="rec-dot" id="rec-dot"></span> <span id="rec-state">Recording</span>
+        <span id="rec-timer">00:00</span>
+        <span id="rec-tracks"></span>
+      </div>
+      <div id="proc-banner" hidden></div>
+
+      <audio id="player" controls hidden aria-label="Meeting audio"></audio>
+
+      <nav id="tabs" role="tablist">
+        <button data-tab="agenda" role="tab"><svg class="ic sm"><use href="#i-book"/></svg> Agenda</button>
+        <button data-tab="note" class="active" role="tab"><svg class="ic sm"><use href="#i-sparkles"/></svg> AI Note</button>
+        <button data-tab="transcript" role="tab"><svg class="ic sm"><use href="#i-doc"/></svg> Transcript</button>
+      </nav>
+
+      <section id="tab-agenda" class="tab" hidden>
+        <div class="tab-toolbar">
+          <button id="copy-agenda" class="btn"><svg class="ic sm"><use href="#i-copy"/></svg><span class="lbl">Copy Agenda</span></button>
+        </div>
+        <h3><label for="ag-talking">Talking Points</label></h3>
+        <textarea id="ag-talking" rows="5" placeholder="- The things to talk about"></textarea>
+        <h3><label for="ag-actions">Action Items</label></h3>
+        <textarea id="ag-actions" rows="4" placeholder="- [ ] What came out of this meeting?"></textarea>
+        <h3><label for="ag-notepad">Notepad</label></h3>
+        <textarea id="ag-notepad" rows="6" placeholder="Anything else to write down?"></textarea>
+      </section>
+
+      <section id="tab-note" class="tab">
+        <div class="tab-toolbar">
+          <button id="copy-note" class="btn"><svg class="ic sm"><use href="#i-copy"/></svg><span class="lbl">Copy AI Note</span></button>
+          <button id="gdoc-note" class="btn"><svg class="ic sm"><use href="#i-doc"/></svg><span class="lbl">Save to Google Doc</span></button>
+          <button id="regen-note" class="btn subtle"><svg class="ic sm"><use href="#i-refresh"/></svg><span class="lbl">Regenerate</span></button>
+        </div>
+        <div id="note-body"><p class="muted">No AI note yet — record or upload audio.</p></div>
+      </section>
+
+      <section id="tab-transcript" class="tab" hidden>
+        <div class="tab-toolbar">
+          <input id="t-search" placeholder="Search transcript…" aria-label="Search this transcript">
+          <button id="copy-transcript" class="btn"><svg class="ic sm"><use href="#i-copy"/></svg><span class="lbl">Copy Transcript</span></button>
+        </div>
+        <div id="transcript-body"><p class="muted">No transcript yet.</p></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- global recording pill: visible from every view -->
+<div id="rec-pill" hidden role="status">
+  <span class="rec-dot"></span>
+  <button id="pill-open" class="pill-title" aria-label="Open recording meeting"></button>
+  <span id="pill-timer">00:00</span>
+  <button id="pill-pause" class="pill-btn" aria-label="Pause recording">
+    <svg class="ic sm"><use href="#i-pause"/></svg></button>
+  <button id="pill-resume" class="pill-btn" hidden aria-label="Resume recording">
+    <svg class="ic sm"><use href="#i-play"/></svg></button>
+  <button id="pill-stop" class="pill-btn danger" aria-label="Stop recording">
+    <svg class="ic sm"><use href="#i-stop"/></svg></button>
+</div>
+
+<dialog id="rename-dialog">
+  <form method="dialog">
+    <h3 id="rename-title">Rename speaker</h3>
+    <input id="rename-input" list="people-list" placeholder="Type a name…" autocomplete="off"
+           aria-label="New speaker name">
+    <datalist id="people-list"></datalist>
+    <label class="chk"><input type="checkbox" id="rename-all" checked>
+      Apply to all lines by this speaker</label>
+    <div class="dlg-actions">
+      <button value="cancel" class="btn subtle" type="submit">Cancel</button>
+      <button value="ok" class="btn primary" type="submit">Rename</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- generic modal: confirm or single-input prompts -->
+<dialog id="modal">
+  <form method="dialog">
+    <h3 id="modal-title"></h3>
+    <p id="modal-text" class="muted"></p>
+    <input id="modal-input" autocomplete="off" hidden aria-label="Value">
+    <select id="modal-select" hidden aria-label="Choice"></select>
+    <div class="dlg-actions">
+      <button value="cancel" class="btn subtle" type="submit">Cancel</button>
+      <button value="ok" class="btn primary" type="submit" id="modal-ok">OK</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
