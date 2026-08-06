@@ -195,6 +195,10 @@ def apply_update():
     the moment everything is idle (launchd relaunches us)."""
     import os
     s = load_settings()
+    if not _code_changed():
+        s.pop("pending_update", None)
+        SETTINGS_FILE.write_text(json.dumps(s), encoding="utf-8")
+        return {"queued": False, "message": "Already up to date — nothing to apply."}
     if _anything_busy():
         s["pending_update"] = True
         SETTINGS_FILE.write_text(json.dumps(s), encoding="utf-8")

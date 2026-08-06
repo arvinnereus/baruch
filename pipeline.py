@@ -179,7 +179,7 @@ def extract_json(text: str):
         return None
 
 
-STYLE_RULES = """Be COMPREHENSIVE: capture every distinct point, example, anecdote, and cited reference (scripture verses, book titles, names, numbers). Attribute statements to speakers by name when names are known (e.g. "Chin introduced...", "Chin shared a personal account of..."). Quote short key phrases verbatim in 'single quotes' where they carry the meaning. Bold the load-bearing term of each bullet with **. Every ts must be a timestamp copied from the transcript near that content. Do not invent content not in the transcript."""
+STYLE_RULES = """Be COMPREHENSIVE: capture every distinct point, example, anecdote, and cited reference (scripture verses, book titles, names, numbers). Attribute statements to speakers by name ONLY using names that actually appear as speaker labels in the transcript. If no real speaker names are known, write "the speaker" — NEVER invent or borrow a name. Quote short key phrases verbatim in 'single quotes' where they carry the meaning. Bold the load-bearing term of each bullet with **. Every ts must be a timestamp copied from the transcript near that content. Do not invent content not in the transcript."""
 
 
 def _schema_parts(tpl: dict, with_digest: bool):
@@ -238,7 +238,7 @@ def build_chunk_system(tpl: dict) -> str:
 
 REDUCE_SYSTEM = """You write the final summary of a long meeting from segment digests and topic titles. Reply with ONLY a JSON object, no markdown fences:
 {"summary": "1-2 paragraphs separated by \\n\\n"}
-Cover the themes and arc of the whole session, then the practical/applied content. When the speaker/leader is identifiable from the digests, open with who led it (e.g. "This session, led by Chin, covered..."). Wrap 3-6 key phrases in **bold**. Do not invent content."""
+Cover the themes and arc of the whole session, then the practical/applied content. Open with who led it ONLY if a real speaker name appears in the digests; otherwise begin "This session covered..." — never invent a name. Wrap 3-6 key phrases in **bold**. Do not invent content."""
 
 CHUNK_CHARS = 9000  # ~2.3k tokens per map call — finer chunks = more detailed topics
 
