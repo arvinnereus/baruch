@@ -772,9 +772,17 @@ $("#pill-stop").onclick = busy($("#pill-stop"), async () => {
 async function checkUpdate() {
   let s;
   try { s = await api("/update_status"); } catch { return; }
-  const btn = $("#btn-update");
-  btn.hidden = !(s.update_available || s.pending);
-  setLbl(btn, s.pending ? "Update queued…" : "Update ready");
+  const banner = $("#update-banner"), btn = $("#btn-update");
+  banner.hidden = !(s.update_available || s.pending);
+  if (s.pending) {
+    $("#update-text").textContent =
+      "Update queued — it will apply automatically when the current recording/processing finishes.";
+    btn.hidden = true;
+  } else {
+    $("#update-text").textContent = "A software update for LocalFellow is ready.";
+    btn.hidden = false;
+    setLbl(btn, "Update now");
+  }
 }
 $("#btn-update").onclick = busy($("#btn-update"), async () => {
   const r = await api("/update", { method: "POST", body: JSON.stringify({}) });

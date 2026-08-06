@@ -67,12 +67,16 @@
       </label>
       <div class="foot-row">
         <button id="btn-voices" class="linkbtn"><svg class="ic sm"><use href="#i-user"/></svg> People &amp; voices</button>
-        <button id="btn-update" class="linkbtn" hidden><svg class="ic sm"><use href="#i-refresh"/></svg> <span class="lbl">Update ready</span></button>
       </div>
     </div>
   </aside>
 
   <main id="main">
+    <div id="update-banner" hidden>
+      <span id="update-text">A software update for LocalFellow is ready.</span>
+      <button id="btn-update" class="btn primary">
+        <svg class="ic sm"><use href="#i-refresh"/></svg><span class="lbl">Update now</span></button>
+    </div>
     <div id="cal-popup" hidden>
       <div>
         <b id="cal-popup-title"></b> is starting <span id="cal-popup-when"></span>

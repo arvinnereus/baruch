@@ -188,6 +188,10 @@ select { background: var(--panel2); color: var(--text); border: 1px solid var(--
 #ask-input { flex: 1; background: var(--panel2); border: 1px solid var(--line);
   color: var(--text); border-radius: 10px; padding: 11px 13px; }
 
+#update-banner { display: flex; justify-content: space-between; align-items: center;
+  gap: 14px; background: #16224d; border: 1px solid var(--accent);
+  border-radius: 12px; padding: 12px 18px; margin-bottom: 16px; }
+
 #offline { position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
   background: #2a1518; border: 1px solid var(--rec); color: var(--text);
   border-radius: 999px; padding: 8px 18px; z-index: 60; font-size: 13.5px; }
