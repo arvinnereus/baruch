@@ -41,7 +41,11 @@ def recover_interrupted_recordings():
     import subprocess
     # belt-and-braces: at startup NO capture process should exist. A rogue
     # ffmpeg once recorded into a processed meeting for 4 days (8.6 GB).
-    subprocess.run(["pkill", "-INT", "-f", str(DATA)], capture_output=True)
+    # ONLY capture processes — a blanket data-dir pkill once killed a
+    # legitimate reprocess's ffmpeg conversions mid-flight.
+    for pat in (f"avfoundation.*{DATA}", f"systemaudio.*{DATA}",
+                f"voicemic.*{DATA}"):
+        subprocess.run(["pkill", "-INT", "-f", pat], capture_output=True)
     time.sleep(1)
     for d in DATA.iterdir():
         f = d / "meeting.json"
