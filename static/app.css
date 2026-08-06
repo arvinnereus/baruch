@@ -188,6 +188,10 @@ select { background: var(--panel2); color: var(--text); border: 1px solid var(--
 #ask-input { flex: 1; background: var(--panel2); border: 1px solid var(--line);
   color: var(--text); border-radius: 10px; padding: 11px 13px; }
 
+#offline { position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+  background: #2a1518; border: 1px solid var(--rec); color: var(--text);
+  border-radius: 999px; padding: 8px 18px; z-index: 60; font-size: 13.5px; }
+
 /* global recording pill */
 #rec-pill { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
   background: #2a1518; border: 1px solid var(--rec); border-radius: 999px;

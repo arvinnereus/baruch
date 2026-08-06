@@ -54,7 +54,17 @@ function modal({ title, text = "", input = false, placeholder = "", value = "",
 
 /* ---------- sidebar ---------- */
 async function refreshList() {
-  const meetings = await api("/meetings");
+  let meetings;
+  try {
+    meetings = await api("/meetings");
+    $("#offline").hidden = true;
+  } catch {
+    // server unreachable: show it honestly instead of freezing stale UI
+    $("#offline").hidden = false;
+    updatePill([]);
+    $("#cal-popup").hidden = true;
+    return;
+  }
   updatePill(meetings);
   const list = $("#meeting-list");
   list.innerHTML = "";
@@ -778,6 +788,8 @@ checkUpdate();
 
 // keep the global pill fresh even when the user isn't interacting
 setInterval(() => { if (pillMeeting) refreshList(); }, 10000);
+// and keep retrying while the server is unreachable
+setInterval(() => { if (!$("#offline").hidden) refreshList(); }, 15000);
 
 refreshList();
 refreshCalendar();
