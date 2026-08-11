@@ -52,11 +52,22 @@ def recover_interrupted_recordings():
         if not f.exists():
             continue
         meta = json.loads(f.read_text(encoding="utf-8"))
-        if meta.get("status") not in ("recording", "paused"):
+        status = meta.get("status")
+        if status in ("processing", "noting"):
+            # worker died in a restart — a meeting must never zombie in a
+            # busy status (it also blocks queued updates forever)
+            meta["status"] = "processing"
+            meta["recovered"] = True
+            f.write_text(json.dumps(meta), encoding="utf-8")
+            threading.Thread(target=pipeline.process_meeting, args=(d,),
+                             daemon=True).start()
+            continue
+        if status not in ("recording", "paused"):
             continue
         subprocess.run(["pkill", "-INT", "-f", str(d)], capture_output=True)
         time.sleep(1)
-        if list(d.glob("mic-*.raw")) or (d / "mic.raw").exists():
+        if list(d.glob("mic-*.raw")) or list(d.glob("mic-*.caf")) or \
+                (d / "mic.raw").exists():
             meta["status"] = "processing"
             meta["recovered"] = True
             f.write_text(json.dumps(meta), encoding="utf-8")
@@ -182,8 +193,16 @@ def _code_changed() -> bool:
 @app.get("/api/update_status")
 def update_status():
     s = load_settings()
-    return {"update_available": _code_changed(),
-            "pending": bool(s.get("pending_update")),
+    available = _code_changed()
+    pending = bool(s.get("pending_update"))
+    if pending and not available:
+        # stale flag with nothing to apply — the banner must NEVER show
+        # unless a real update exists
+        s.pop("pending_update", None)
+        SETTINGS_FILE.write_text(json.dumps(s), encoding="utf-8")
+        pending = False
+    return {"update_available": available,
+            "pending": pending,
             "busy": _anything_busy(),
             "running_since": int(START_TIME)}
 
