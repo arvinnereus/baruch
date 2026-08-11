@@ -799,6 +799,16 @@ setInterval(() => { if (pillMeeting) refreshList(); }, 10000);
 // and keep retrying while the server is unreachable
 setInterval(() => { if (!$("#offline").hidden) refreshList(); }, 15000);
 
+/* ---------- collapsible sidebar ---------- */
+function setSidebar(collapsed) {
+  document.body.classList.toggle("side-collapsed", collapsed);
+  $("#side-expand").hidden = !collapsed;
+  localStorage.setItem("lf-sidebar", collapsed ? "collapsed" : "open");
+}
+$("#btn-collapse").onclick = () => setSidebar(true);
+$("#side-expand").onclick = () => setSidebar(false);
+if (localStorage.getItem("lf-sidebar") === "collapsed") setSidebar(true);
+
 refreshList();
 refreshCalendar();
 refreshSetupCard();
