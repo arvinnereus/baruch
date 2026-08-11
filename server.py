@@ -184,8 +184,10 @@ def _anything_busy() -> bool:
 
 
 def _code_changed() -> bool:
+    """Only SERVER code counts — static files apply on page refresh and need
+    no restart, so they must not trigger the update banner."""
     newest = 0.0
-    for p in list(APP_DIR.glob("*.py")) + list((APP_DIR / "static").glob("*")):
+    for p in APP_DIR.glob("*.py"):
         newest = max(newest, p.stat().st_mtime)
     return newest > START_TIME
 
