@@ -4,6 +4,24 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows in the sidebar
 footer; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## 1.2.0 — 2026-08-13
+
+### Changed
+- **Processing runs in its own process** (`worker.py`) instead of inside the
+  web server. Diarization and speaker embeddings are CPU-bound Python that
+  hold the GIL, so a long recording made the entire UI unresponsive while it
+  processed — the app appeared to hang three times, twice during a live class.
+  A separate process cannot starve the server no matter how long it runs.
+- **A worker now survives a server restart.** Previously an update or crash
+  during processing abandoned the work and the meeting had to be rescued at
+  startup; the worker is started in its own session and keeps going. On
+  startup the server checks whether the recorded worker pid is genuinely still
+  running that meeting before restarting anything, so work is never duplicated
+  and a dead worker is still rescued.
+- A worker that dies unexpectedly marks its meeting `error` rather than
+  leaving it stuck on `processing`, which used to block queued updates
+  indefinitely.
+
 ## 1.1.0 — 2026-08-13
 
 ### Changed

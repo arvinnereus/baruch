@@ -2,6 +2,8 @@
 Run via ./run.sh (creates venv with fastapi/uvicorn)."""
 import json
 import re
+import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -45,6 +47,30 @@ async def no_cache_static(request, call_next):
     return resp
 
 
+def spawn_worker(d: Path):
+    """Process a meeting in a SEPARATE process (see worker.py).
+
+    Never run the pipeline in-server: diarization is CPU-bound Python and holds
+    the GIL, which froze the UI for the length of a class three times."""
+    log = (d / "worker.log").open("a", buffering=1)
+    subprocess.Popen([sys.executable, str(APP_DIR / "worker.py"), str(d)],
+                     cwd=str(APP_DIR), stdout=log, stderr=subprocess.STDOUT,
+                     start_new_session=True)  # outlive a server restart
+
+
+def _worker_alive(pid, d: Path) -> bool:
+    """True only if that pid is still OUR worker for this meeting — pids get
+    reused, and a false positive would strand a meeting on 'processing'."""
+    if not pid:
+        return False
+    try:
+        cmd = subprocess.run(["ps", "-p", str(pid), "-o", "command="],
+                             capture_output=True, text=True, timeout=5).stdout
+    except Exception:
+        return False
+    return "worker.py" in cmd and str(d) in cmd
+
+
 @app.on_event("startup")
 def recover_interrupted_recordings():
     """If the server died mid-recording, capture processes are orphaned and the
@@ -66,13 +92,15 @@ def recover_interrupted_recordings():
         meta = json.loads(f.read_text(encoding="utf-8"))
         status = meta.get("status")
         if status in ("processing", "noting"):
-            # worker died in a restart — a meeting must never zombie in a
-            # busy status (it also blocks queued updates forever)
+            if _worker_alive(meta.get("worker_pid"), d):
+                continue  # survived the restart in its own process — let it be
+            # genuinely dead: a meeting must never zombie in a busy status
+            # (it also blocks queued updates forever)
             meta["status"] = "processing"
             meta["recovered"] = True
+            meta.pop("worker_pid", None)
             f.write_text(json.dumps(meta), encoding="utf-8")
-            threading.Thread(target=pipeline.process_meeting, args=(d,),
-                             daemon=True).start()
+            spawn_worker(d)
             continue
         if status not in ("recording", "paused"):
             continue
@@ -83,8 +111,7 @@ def recover_interrupted_recordings():
             meta["status"] = "processing"
             meta["recovered"] = True
             f.write_text(json.dumps(meta), encoding="utf-8")
-            threading.Thread(target=pipeline.process_meeting, args=(d,),
-                             daemon=True).start()
+            spawn_worker(d)
         else:
             meta["status"] = "error"
             meta["error"] = "recording interrupted before any audio was captured"
@@ -369,8 +396,7 @@ def save(mid: str, meta: dict):
 
 
 def run_pipeline_bg(mid: str):
-    threading.Thread(target=pipeline.process_meeting, args=(mdir(mid),),
-                     daemon=True).start()
+    spawn_worker(mdir(mid))
 
 
 @app.get("/api/meetings")
