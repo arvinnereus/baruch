@@ -1,6 +1,6 @@
-// LocalFellow menu-bar companion — system-wide recording status + control.
+// Baruch menu-bar companion — system-wide recording status + control.
 // Native NSStatusItem: red dot + live timer while recording, visible in any
-// app. Talks to the LocalFellow server's REST API on localhost.
+// app. Talks to the Baruch server's REST API on localhost.
 // Build: swiftc -O menubar.swift -o menubar   (done by run.sh)
 
 import AppKit
@@ -32,7 +32,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func applicationDidFinishLaunching(_ n: Notification) {
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.button?.image = NSImage(systemSymbolName: "mic",
-                                     accessibilityDescription: "LocalFellow")
+                                     accessibilityDescription: "Baruch")
         let menu = NSMenu()
         menu.delegate = self
         item.menu = menu
@@ -83,7 +83,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             btn.title = String(format: " %d:%02d", t / 60, t % 60)
         } else {
             btn.image = NSImage(systemSymbolName: serverUp ? "mic" : "mic.slash",
-                                accessibilityDescription: "LocalFellow")
+                                accessibilityDescription: "Baruch")
             btn.contentTintColor = nil
             btn.title = ""
         }
@@ -116,14 +116,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                          action: #selector(startOnline), keyEquivalent: "o")
                 .target = self
         } else {
-            menu.addItem(withTitle: "LocalFellow server is not running",
+            menu.addItem(withTitle: "Baruch server is not running",
                          action: nil, keyEquivalent: "")
-            menu.addItem(withTitle: "Start LocalFellow",
+            menu.addItem(withTitle: "Start Baruch",
                          action: #selector(startServer), keyEquivalent: "l")
                 .target = self
         }
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(withTitle: "Open LocalFellow",
+        menu.addItem(withTitle: "Open Baruch",
                      action: #selector(openApp), keyEquivalent: "")
             .target = self
         menu.addItem(NSMenuItem.separator())

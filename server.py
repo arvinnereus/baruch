@@ -1,6 +1,7 @@
-"""LocalFellow MVP server — meetings, recording control, transcript, AI notes.
+"""Baruch MVP server — meetings, recording control, transcript, AI notes.
 Run via ./run.sh (creates venv with fastapi/uvicorn)."""
 import json
+import re
 import threading
 import time
 import uuid
@@ -14,13 +15,24 @@ import calendar_ics
 import gdoc_export
 import pipeline
 import recorder
+import version
 
 APP_DIR = Path(__file__).resolve().parent
 DATA = APP_DIR / "data" / "meetings"
 DATA.mkdir(parents=True, exist_ok=True)
 SETTINGS_FILE = APP_DIR / "data" / "settings.json"
 
-app = FastAPI(title="LocalFellow")
+app = FastAPI(title="Baruch")
+
+
+@app.exception_handler(FileNotFoundError)
+async def meeting_gone(request, exc):
+    """A browser tab can outlive its meeting (merged away or deleted) — answer
+    with something the UI can show instead of a bare 500 HTML page."""
+    return JSONResponse(
+        {"error": f"meeting {exc} no longer exists — it was merged or deleted. "
+                  "Refresh and open the current meeting from the sidebar."},
+        status_code=404)
 
 
 @app.middleware("http")
@@ -104,11 +116,22 @@ def get_people():
         if PEOPLE_FILE.exists() else []
 
 
+def _ics_urls(s: dict) -> list[str]:
+    """All connected calendar URLs (migrates the legacy single ics_url)."""
+    urls = [u for u in (s.get("ics_urls") or []) if u]
+    legacy = (s.get("ics_url") or "").strip()
+    if legacy and legacy not in urls:
+        urls.append(legacy)
+    return urls
+
+
 @app.get("/api/settings")
 def get_settings():
     s = load_settings()
     vp = APP_DIR / "data" / "voiceprints.json"
-    return {"ics_url_set": bool(s.get("ics_url")),
+    urls = _ics_urls(s)
+    return {"ics_url_set": bool(urls),
+            "ics_count": len(urls),
             "my_name": s.get("my_name", ""),
             "has_voiceprints": vp.exists() and vp.stat().st_size > 10}
 
@@ -120,8 +143,18 @@ def set_settings(body: dict):
                 "obsidian_dir"):
         if key in body:
             s[key] = str(body[key]).strip()
+    if "add_ics_url" in body:
+        url = str(body["add_ics_url"]).strip()
+        urls = _ics_urls(s)
+        if url and url not in urls:
+            urls.append(url)
+        s["ics_urls"] = urls
+        s.pop("ics_url", None)  # migrated into the list
+    if "ics_urls" in body and isinstance(body["ics_urls"], list):
+        s["ics_urls"] = [str(u).strip() for u in body["ics_urls"] if str(u).strip()]
+        s.pop("ics_url", None)
     SETTINGS_FILE.write_text(json.dumps(s), encoding="utf-8")
-    return {"ok": True}
+    return {"ok": True, "ics_count": len(_ics_urls(s))}
 
 
 AUDIO_PATTERNS = ("meeting.wav", "mic*.raw", "mic*.caf", "mic*.wav",
@@ -192,6 +225,25 @@ def _code_changed() -> bool:
     return newest > START_TIME
 
 
+def _disk_version() -> str:
+    """Version of the code ON DISK. After an update lands but before the
+    restart, this is ahead of the running server's `version.VERSION` — the
+    difference is what the banner offers."""
+    try:
+        m = re.search(r'VERSION\s*=\s*"([^"]+)"',
+                      (APP_DIR / "version.py").read_text(encoding="utf-8"))
+        return m.group(1) if m else version.VERSION
+    except Exception:
+        return version.VERSION
+
+
+@app.get("/api/version")
+def app_version():
+    return {"version": version.VERSION, "released": version.RELEASED,
+            "disk_version": _disk_version(),
+            "running_since": int(START_TIME)}
+
+
 @app.get("/api/update_status")
 def update_status():
     s = load_settings()
@@ -206,6 +258,8 @@ def update_status():
     return {"update_available": available,
             "pending": pending,
             "busy": _anything_busy(),
+            "version": version.VERSION,
+            "new_version": _disk_version(),
             "running_since": int(START_TIME)}
 
 
@@ -264,13 +318,15 @@ def schedule_retention():
 
 @app.get("/api/calendar/today")
 def calendar_today():
-    url = load_settings().get("ics_url")
-    if not url:
-        return {"connected": False, "events": []}
+    urls = _ics_urls(load_settings())
+    if not urls:
+        return {"connected": False, "events": [], "calendars": 0}
     try:
-        return {"connected": True, "events": calendar_ics.today_events(url)}
+        return {"connected": True, "calendars": len(urls),
+                "events": calendar_ics.today_events_all(urls)}
     except Exception as e:
-        return {"connected": True, "error": str(e), "events": []}
+        return {"connected": True, "calendars": len(urls),
+                "error": str(e), "events": []}
 
 
 @app.post("/api/calendar/record")

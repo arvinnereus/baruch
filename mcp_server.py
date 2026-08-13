@@ -1,4 +1,4 @@
-"""LocalFellow MCP server — exposes the meeting library to Claude Code /
+"""Baruch MCP server — exposes the meeting library to Claude Code /
 Claude Desktop over stdio. Register once:
 
   claude mcp add localfellow -s user -- \
@@ -15,7 +15,7 @@ server = MCPServer("localfellow")
 
 @server.tool()
 def list_meetings(limit: int = 30) -> list[dict]:
-    """List recent LocalFellow meetings (id, title, created_at epoch,
+    """List recent Baruch meetings (id, title, created_at epoch,
     duration seconds, status). Newest first."""
     return meeting_tools.list_meetings(limit)
 

@@ -19,9 +19,17 @@ def _drive_root() -> Path | None:
     return None
 
 
+def _export_dir(drive: Path | None) -> Path:
+    """Drive/Baruch, but keep using an existing Drive/LocalFellow folder so the
+    rename never orphans notes exported before it."""
+    if not drive:
+        return Path(__file__).resolve().parent / "data" / "exports"
+    new, legacy = drive / "Baruch", drive / "LocalFellow"
+    return legacy if (legacy.exists() and not new.exists()) else new
+
+
 _drive = _drive_root()
-DEFAULT_DIR = (_drive / "LocalFellow") if _drive else \
-    Path(__file__).resolve().parent / "data" / "exports"
+DEFAULT_DIR = _export_dir(_drive)
 
 TS_COLOR = RGBColor(0x4D, 0x6B, 0xFE)
 
@@ -46,7 +54,7 @@ def export_note(title: str, when: str, note: dict, out_dir: Path | None = None) 
     doc = Document()
     doc.add_heading(title, level=0)
     p = doc.add_paragraph()
-    r = p.add_run(f"{when} · AI Notes by LocalFellow")
+    r = p.add_run(f"{when} · AI Notes by Baruch")
     r.italic = True
     r.font.size = Pt(9)
 

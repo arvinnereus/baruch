@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LocalFellow</title>
+<title>Baruch</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -33,14 +33,14 @@
   </defs>
 </svg>
 
-<div id="offline" hidden role="alert">LocalFellow server unreachable — reconnecting…</div>
+<div id="offline" hidden role="alert">Baruch server unreachable — reconnecting…</div>
 <div id="app">
   <aside id="sidebar">
     <div class="side-head">
       <span class="logo">
         <button id="btn-collapse" class="linkbtn" aria-label="Collapse sidebar" title="Collapse sidebar">
           <svg class="ic"><use href="#i-panel"/></svg></button>
-        <svg class="ic"><use href="#i-mic"/></svg> LocalFellow</span>
+        <svg class="ic"><use href="#i-mic"/></svg> Baruch</span>
       <span class="head-btns">
         <button id="btn-ask" class="btn" aria-label="Ask your meetings">
           <svg class="ic"><use href="#i-sparkles"/></svg><span class="lbl">Ask</span></button>
@@ -71,6 +71,7 @@
       </label>
       <div class="foot-row">
         <button id="btn-voices" class="linkbtn"><svg class="ic sm"><use href="#i-user"/></svg> People &amp; voices</button>
+        <span id="app-version" class="version" title="Installed version"></span>
       </div>
     </div>
   </aside>
@@ -80,7 +81,7 @@
 
   <main id="main">
     <div id="update-banner" hidden>
-      <span id="update-text">A software update for LocalFellow is ready.</span>
+      <span id="update-text">A software update for Baruch is ready.</span>
       <button id="btn-update" class="btn primary">
         <svg class="ic sm"><use href="#i-refresh"/></svg><span class="lbl">Update now</span></button>
     </div>
@@ -109,7 +110,7 @@
 
     <div id="voices-view" hidden>
       <h2><svg class="ic"><use href="#i-user"/></svg> People &amp; voices</h2>
-      <p class="muted">LocalFellow labels speakers by name when it recognizes their voice.
+      <p class="muted">Baruch labels speakers by name when it recognizes their voice.
         Enroll anyone below (they speak for 20 seconds), or just rename a speaker in any
         transcript — that teaches their voice automatically. Everything stays on this Mac.</p>
 
@@ -136,7 +137,7 @@
         <div id="v-script">
           <div class="script-head">Read this aloud, at your normal pace:</div>
           <p>“Hello, my name is <b class="v-script-name">[your name]</b>, and this is my
-          voice sample for LocalFellow. In meetings I talk about plans, budgets, and
+          voice sample for Baruch. In meetings I talk about plans, budgets, and
           schedules — for example, thirty-five thousand dollars by the ninth of September.
           The quick brown fox jumps over the lazy dog, while the five boxing wizards jump
           quickly. I usually speak just like this: naturally, clearly, and at my own pace.”</p>
@@ -151,7 +152,7 @@
       <div class="v-block">
         <h3>Test recognition</h3>
         <div class="v-row">
-          <span class="muted">Speak for 5 seconds and see who LocalFellow hears.</span>
+          <span class="muted">Speak for 5 seconds and see who Baruch hears.</span>
           <button id="v-test" class="btn">
             <svg class="ic sm"><use href="#i-mic"/></svg><span class="lbl">Test my voice</span></button>
         </div>
@@ -161,7 +162,7 @@
 
     <div id="empty-state">
       <div id="setup-card" hidden>
-        <h3>Set up LocalFellow</h3>
+        <h3>Set up Baruch</h3>
         <div class="setup-item" data-step="name"><span class="setup-dot"></span>
           <span>Set <b>your name</b> so your voice is labelled correctly</span>
           <button class="btn sm-btn" id="setup-name">Set name</button></div>

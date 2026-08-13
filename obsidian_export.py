@@ -68,7 +68,7 @@ def export_note(meta: dict, note: dict, note_md: str, mdir: Path) -> Path | None
 
     fm = ["---",
           f"date: {day}",
-          "tags: [meeting, localfellow]",
+          "tags: [meeting, baruch]",
           f"meeting_id: {meta['id']}",
           f"template: {note.get('template', 'general')}",
           f"duration_min: {meta.get('duration_s', 0) // 60}"]
@@ -76,6 +76,6 @@ def export_note(meta: dict, note: dict, note_md: str, mdir: Path) -> Path | None
         fm.append("speakers: [" + ", ".join(speakers) + "]")
     fm.append("---")
     body = "\n".join(fm) + "\n\n" + note_md.strip() + \
-        "\n\n---\n*Recorded with LocalFellow · transcript & audio on Caleb*\n"
+        "\n\n---\n*Recorded with Baruch · transcript & audio on Caleb*\n"
     path.write_text(body, encoding="utf-8")
     return path

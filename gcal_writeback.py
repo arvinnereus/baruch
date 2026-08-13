@@ -21,7 +21,10 @@ from pathlib import Path
 
 APP_DIR = Path(__file__).resolve().parent
 SETTINGS_FILE = APP_DIR / "data" / "settings.json"
-MARKER = "— LocalFellow AI Note —"
+MARKER = "— Baruch AI Note —"
+# Events written before the rename carry the old marker; keep recognizing it or
+# re-running a debrief would append a second block instead of replacing.
+LEGACY_MARKERS = ["— LocalFellow AI Note —"]
 SKIP_CALENDARS = {"Birthdays", "Siri Suggestions", "Scheduled Reminders",
                   "Holidays in Singapore", "Birthday", "clpd birthday"}
 
@@ -45,12 +48,23 @@ _PRELUDE = '''
   set dLow to dStart - (62 * days)
   tell application "Calendar"
     set c to first calendar whose name is theCal
-    set evs to (every event of c whose summary is theTitle and start date is less than or equal to dEnd and start date is greater than or equal to dLow)
+    -- summary-only `whose` (compound date conditions make Calendar.app's
+    -- query several times slower and blow the timeout on big calendars);
+    -- the date window is filtered in-script below
+    set evs to (every event of c whose summary is theTitle)
     if (count of evs) is 0 then return "___NOT_FOUND___"
-    set best to item 1 of evs
+    set best to missing value
     repeat with e in evs
-      if (start date of e) is greater than or equal to (start date of best) then set best to e
+      set sd to start date of e
+      if sd is less than or equal to dEnd and sd is greater than or equal to dLow then
+        if best is missing value then
+          set best to e
+        else if sd is greater than or equal to (start date of best) then
+          set best to e
+        end if
+      end if
     end repeat
+    if best is missing value then return "___NOT_FOUND___"
 '''
 
 # Single-pass upsert: the `whose` query on a large calendar takes ~40 s, so we
@@ -61,6 +75,7 @@ on run argv
 {_PRELUDE}
     set newBlock to item 6 of argv
     set theMarker to item 7 of argv
+    set oldMarker to item 8 of argv
     set oldDesc to ""
     try
       set oldDesc to description of best
@@ -70,6 +85,8 @@ on run argv
     if oldDesc is not "" then
       set AppleScript's text item delimiters to theMarker
       set kept to text item 1 of oldDesc
+      set AppleScript's text item delimiters to oldMarker
+      set kept to text item 1 of kept
       set AppleScript's text item delimiters to ""
     end if
     set description of best to (kept & newBlock)
@@ -79,9 +96,27 @@ end run
 '''
 
 
+def _ensure_calendar_running():
+    """AppleScript gets error -600 when Calendar.app isn't running (common
+    right after a reboot or when the user quit it). Launch it hidden in the
+    background and give it a moment to finish opening its database."""
+    import time as _time
+    r = subprocess.run(["pgrep", "-x", "Calendar"], capture_output=True)
+    if r.returncode == 0:
+        return
+    subprocess.run(["open", "-gja", "Calendar"], capture_output=True)
+    _time.sleep(8)
+
+
 def _osascript(script: str, *args, timeout=60) -> str:
+    _ensure_calendar_running()
     r = subprocess.run(["osascript", "-", *args], input=script,
                        capture_output=True, text=True, timeout=timeout)
+    if r.returncode != 0 and "-600" in r.stderr:
+        import time as _time
+        _time.sleep(8)  # Calendar still launching — one retry
+        r = subprocess.run(["osascript", "-", *args], input=script,
+                           capture_output=True, text=True, timeout=timeout)
     if r.returncode != 0:
         raise RuntimeError(r.stderr.strip()[:200] or "osascript failed")
     return r.stdout.strip()
@@ -145,12 +180,17 @@ def write_debrief(title: str, created_at: int, note: dict, gdoc_path: str = "") 
         calendars = _candidate_calendars()
     except Exception as e:
         return f"calendar access failed: {e}"
+    failures = []
     for cal in calendars:
         try:
-            res = _osascript(UPSERT_SCRIPT, cal, *dargs, block, MARKER, timeout=150)
-        except Exception:
-            continue  # slow/broken calendar — move on
+            res = _osascript(UPSERT_SCRIPT, cal, *dargs, block, MARKER,
+                             LEGACY_MARKERS[0], timeout=240)
+        except Exception as e:
+            failures.append(f"{cal}: {e}")  # slow/broken calendar — move on
+            continue
         if res == "ok":
             _save_setting("gcal_calendar", cal)
             return "ok"
+    if failures:
+        return f"calendar query failed on {len(failures)} calendar(s): {failures[0][:120]}"
     return "event not found in Calendar.app (checked all calendars)"

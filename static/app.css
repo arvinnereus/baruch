@@ -47,7 +47,9 @@ body.side-collapsed #main { padding-left: 66px; }
 .upload-label { color: var(--muted); cursor: pointer; font-size: 13px;
   display: flex; align-items: center; gap: 6px; }
 .upload-label:hover { color: var(--text); }
-.foot-row { display: flex; gap: 16px; margin-top: 10px; }
+.foot-row { display: flex; gap: 16px; margin-top: 10px; align-items: center; }
+.foot-row .version { margin-left: auto; color: var(--muted); font-size: 11.5px;
+  opacity: .7; font-variant-numeric: tabular-nums; }
 .foot-row .linkbtn { color: var(--muted); font-size: 12.5px; padding: 0;
   display: flex; align-items: center; gap: 5px; }
 .foot-row .linkbtn:hover { color: var(--text); }

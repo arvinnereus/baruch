@@ -1,10 +1,14 @@
-/* LocalFellow MVP frontend */
+/* Baruch MVP frontend */
 const $ = (s) => document.querySelector(s);
 const api = async (path, opts = {}) => {
   const r = await fetch("/api" + path, {
     headers: { "Content-Type": "application/json" }, ...opts,
   });
-  if (!r.ok) throw new Error((await r.json()).error || r.statusText);
+  if (!r.ok) {
+    let msg = r.statusText;
+    try { msg = (await r.json()).error || msg; } catch { /* non-JSON error body */ }
+    throw new Error(msg);
+  }
   return r.json();
 };
 
@@ -444,12 +448,15 @@ const stopRecTimer = () => clearInterval(recTimer);
 let calEvents = [], dismissed = new Set();
 
 $("#cal-connect").onclick = async () => {
-  const url = await modal({ title: "Connect Google Calendar",
-    text: "Paste your calendar's private ICS URL (Google Calendar → Settings → your calendar → 'Secret address in iCal format'). It stays on this Mac.",
+  let count = 0;
+  try { count = (await api("/settings")).ics_count || 0; } catch {}
+  const url = await modal({
+    title: count ? `Add a calendar (${count} connected)` : "Connect Google Calendar",
+    text: "Paste a calendar's private ICS URL (Google Calendar → Settings → that calendar → 'Secret address in iCal format'). You can add several — events merge into one Today list. Everything stays on this Mac.",
     input: true, placeholder: "https://calendar.google.com/calendar/ical/…",
-    okLabel: "Connect" });
+    okLabel: count ? "Add calendar" : "Connect" });
   if (!url) return;
-  await api("/settings", { method: "POST", body: JSON.stringify({ ics_url: url }) });
+  await api("/settings", { method: "POST", body: JSON.stringify({ add_ics_url: url }) });
   refreshCalendar();
   refreshSetupCard();
 };
@@ -458,7 +465,8 @@ async function refreshCalendar() {
   let d;
   try { d = await api("/calendar/today"); } catch { return; }
   const box = $("#cal-events");
-  $("#cal-connect").textContent = d.connected ? "↻" : "connect";
+  $("#cal-connect").textContent = d.connected
+    ? `＋ add (${d.calendars || 1})` : "connect";
   if (!d.connected) { box.innerHTML = '<div class="muted" style="font-size:12px">Not connected</div>'; return; }
   if (d.error) { box.innerHTML = `<div class="muted" style="font-size:12px">⚠️ ${esc(d.error)}</div>`; return; }
   calEvents = d.events || [];
@@ -779,7 +787,9 @@ async function checkUpdate() {
       "Update queued — it will apply automatically when the current recording/processing finishes.";
     btn.hidden = true;
   } else {
-    $("#update-text").textContent = "A software update for LocalFellow is ready.";
+    $("#update-text").textContent = s.new_version && s.new_version !== s.version
+      ? `Version ${s.new_version} is ready to install (you're on ${s.version}).`
+      : "A software update is ready to install.";
     btn.hidden = false;
     setLbl(btn, "Update now");
   }
@@ -808,6 +818,17 @@ function setSidebar(collapsed) {
 $("#btn-collapse").onclick = () => setSidebar(true);
 $("#side-expand").onclick = () => setSidebar(false);
 if (localStorage.getItem("lf-sidebar") === "collapsed") setSidebar(true);
+
+/* ---------- version badge ---------- */
+async function showVersion() {
+  try {
+    const v = await api("/version");
+    const el = $("#app-version");
+    el.textContent = "v" + v.version;
+    el.title = `Version ${v.version} — released ${v.released}`;
+  } catch { /* server down: the offline banner already says so */ }
+}
+showVersion();
 
 refreshList();
 refreshCalendar();

@@ -1,162 +1,144 @@
-# LocalFellow
+# Baruch
 
 **A fully local, botless AI meeting notetaker for macOS.** Records in-person
-meetings and Zoom/Google Meet calls (no bot joins!), then generates a
-speaker-labelled transcript and a structured AI note — summary, action items,
-decisions, topics, all with clickable timestamps. **Everything runs and stays
-on your Mac**: whisper.cpp transcription, sherpa-onnx speaker diarization +
-voice recognition, and Ollama for notes and chat. Zero cloud, zero API tokens,
-zero subscription.
+meetings and Zoom/Google Meet calls — no bot joins the call — then produces a
+speaker-labelled transcript and a structured AI note with clickable timestamps.
+**Everything runs and stays on your Mac**: whisper.cpp for transcription,
+sherpa-onnx for speaker diarization and voice recognition, Ollama for notes and
+chat. No cloud, no API tokens, no subscription.
+
+*Named after Baruch son of Neriah, Jeremiah's scribe — the man who wrote down
+every word from dictation.*
 
 ## Quick start
 
 ```bash
 brew install whisper-cpp ffmpeg ollama
-ollama pull qwen2.5:7b-instruct   # notes; also try hermes3:8b for Ask
+ollama pull qwen2.5:7b-instruct   # notes; hermes3:8b recommended for Ask
 ./run.sh                          # opens http://127.0.0.1:8377
 ```
 
-First run downloads the whisper + speaker models (~1.7 GB one-time), builds
-the Swift capture tools, creates the Python env, and launches the menu-bar
-companion. macOS will ask for Microphone and Screen-Recording permission on
-first recording — approve both (screen recording is how system audio is
-captured for online meetings; note macOS re-asks monthly).
+First run downloads the whisper and speaker models (~1.7 GB, once), builds the
+Swift capture tools, creates the Python environment, and starts the menu-bar
+companion. macOS asks for Microphone and Screen Recording permission on the
+first recording — approve both. Screen Recording is how system audio is
+captured for online meetings; macOS re-asks roughly monthly.
 
 ## Use
 
-1. **+ New** → pick mode:
-   - **In-person (mic)** — records the MacBook mic.
-   - **Online (system + mic)** — botless Zoom/Meet capture: system audio =
-     "Others", your mic = "Me". Wear headphones to avoid echo duplication.
-2. Optional: fill **Context / vocabulary** (names, domain terms) — it is fed to
-   whisper as the calibrated domain prompt and to the AI Note LLM.
-3. **● Record** → meet → **■ Stop**. Transcription + AI Note run automatically.
-4. Tabs: **Agenda** (talking points / action items / notepad, editable any time),
-   **AI Note**, **Transcript** (search, click timestamps to seek audio).
-5. **Copy** buttons on every tab (Markdown). Click a speaker name in the
-   transcript to rename — one line or all lines by that speaker.
+1. **+ New** → pick a mode:
+   - **In-person (mic)** — records the Mac microphone.
+   - **Online (system + mic)** — botless Zoom/Meet capture: system audio
+     becomes "Others", your mic becomes "Me", with echo cancellation applied
+     so you can work without headphones.
+2. Optionally fill **Context / vocabulary** (names, domain terms). It feeds
+   whisper's domain prompt and the note model.
+3. **● Record** → meet → **■ Stop**. Transcription and the AI note run
+   automatically; pause and resume freely.
+4. Tabs: **Agenda** (talking points, action items, notepad), **AI Note**, and
+   **Transcript** (searchable, click a timestamp to seek the audio).
+5. Every tab has a **Copy** button (Markdown). Click any speaker name in the
+   transcript to rename them — one line or every line they spoke.
 6. **⬆ Upload** any M4A/WAV/MP3/WEBM/MP4 for the same treatment.
 
-## Architecture
+Recordings can also be started from the menu bar or from a calendar event, and
+several recordings of one meeting can be merged into a single note afterwards.
 
-- `server.py` — FastAPI: meetings CRUD, record start/stop, upload, rename, notes.
-- `recorder.py` — ffmpeg mic capture (crash-safe raw PCM) + `systemaudio` child.
-- `systemaudio.swift` — ScreenCaptureKit system-audio tap (16 kHz mono CAF).
-- `pipeline.py` — whisper.cpp (calibrated: raw audio, beam 8, domain prompt,
-  hallucination-loop dedupe) → per-track transcripts merged by timestamp →
-  Ollama JSON note.
-- `static/` — dark Fellow-style single-page UI.
-- `data/meetings/<id>/` — audio, transcript.json, note.json/md, agenda.json.
-  Deleted meetings go to `data/trash/`.
+## What it does automatically
 
-## Google Calendar
+- **Names the speakers it knows.** Voiceprints are learned from any rename, so
+  people you name once are recognized in every later recording.
+- **Exports the note** as a formatted `.docx` to `My Drive/Baruch/` (opens
+  directly in Google Docs) and as Markdown into an Obsidian vault.
+- **Writes a debrief back onto the calendar event** — summary, action items,
+  topics, and the document path — via Calendar.app, which syncs to Google
+  Calendar.
+- **Deletes audio after 30 days.** Transcripts, notes, and agendas are kept
+  forever. Configure with `retention_days` in `data/settings.json` (0 keeps
+  audio indefinitely).
+- **Updates itself truthfully.** The banner appears only when there is a real
+  update, names the version it will install, and queues rather than
+  interrupting a recording in progress.
 
-Sidebar → **📅 Today → connect** → paste your calendar's private ICS URL
-(Google Calendar → Settings → your calendar → *Secret address in iCal format*).
-LocalFellow then lists today's meetings, prefills title + attendee names when you
-hit **● rec** on an event (attendees feed the speaker suggestions and whisper
-vocabulary), and pops up "*Meeting X is starting — Record now?*" within 3 minutes
-of the start time — Fellow-style. Refresh is every 5 min; simple daily/weekly
-recurrences are supported.
+## Calendars
 
-## After the note is ready (auto, 2026-07-30)
+Sidebar → **Today → connect**, then paste a calendar's private ICS URL (Google
+Calendar → Settings → that calendar → *Secret address in iCal format*). Add as
+many calendars as you like with **＋ add**; their events merge into one
+deduplicated list, and one broken calendar never breaks the others.
 
-- The AI Note is **auto-exported as a formatted .docx** to
-  `My Drive/LocalFellow/` (opens directly in Google Docs; override folder with
-  `gdoc_dir` in `data/settings.json`). Manual re-export: "📄 Save to Google Doc".
-- If the meeting was started from a calendar event, LocalFellow writes a
-  **debrief into the event's description** (summary, action items, topic list,
-  Google Doc path) via macOS Calendar.app → syncs to Google Calendar.
-  ONE-TIME SETUP: System Settings → Internet Accounts → add the Google account
-  → enable Calendars. Existing description text is preserved above the marker.
+Baruch prefills the title and attendee names when you record from an event, and
+pops up "*Meeting X is starting — record now?*" a few minutes ahead. Refreshes
+every 5 minutes; daily and weekly recurrences are supported.
 
-## Pause / Resume
+## Note templates
 
-⏸ Pause during breaks, ▶ Resume after — each resume records a new segment;
-segments are joined seamlessly at processing (pause time is simply absent).
-The timer shows recorded time, not wall-clock.
+Pick the note format per meeting from the header dropdown; changing it offers
+instant regeneration.
 
-## Audio quality (upgraded 2026-07-29)
+- **General Meeting** — summary, action items, decisions, topics (default).
+- **Formal Minutes** — attendees, agenda items, decisions and resolutions,
+  action items, matters arising. Minutes record *outcomes*; the general recap
+  records *discussion*.
+- **Lecture / Class** — key teachings with citations, illustrations, practical
+  applications, Q&A. Never invents action items.
+- **Client Discovery** — outcome, sentiment, needs, decision maker, budget,
+  competitors, objections.
 
-- Everything records and plays back at **48 kHz** (previously 16 kHz — which
-  sounded muffled). Whisper gets a dedicated 16 kHz downmix (soxr resampler).
-- Quiet/far-field sources get a **static gain boost** before transcription
-  (dynamic normalizers are deliberately avoided — they cause hallucination loops).
-- Transcription auto-picks **large-v3** (full, most accurate) when present,
-  falling back to large-v3-turbo. large-v3 is ~2–3× slower but noticeably better
-  on distant or accented speech. Delete `models/ggml-large-v3.bin`
-  to force turbo.
+Add your own to `data/templates.json`; a template is just named sections with
+extraction prompts (see `note_templates.py`).
 
-## Speaker diarization (added 2026-07-30)
+## Ask, search, and MCP
 
-In-person recordings and the online "Others" channel are automatically
-separated into **Speaker 1..N** (sherpa-onnx: pyannote segmentation +
-ERes2Net embeddings, ~11× real-time, models in `models/`). Click a speaker
-name in the Transcript tab to rename — the dialog suggests previously used
-names and calendar attendees (people directory in `data/people.json`), and
-you choose one-line vs all-lines scope. Rename, then Regenerate the note to
-get real names in summaries and calendar debriefs.
+- **Ask** — chat with your whole library using a local model through Ollama
+  (`ask_model` in `data/settings.json`; `hermes3:8b` works best because it
+  searches on its own initiative). Answers cite the meeting and timestamp, and
+  the first search is auto-seeded so replies stay grounded.
+- **Search** — full-text across every transcript, note, and title (SQLite FTS5).
+- **MCP server** (`mcp_server.py`) — lets Claude Code or Claude Desktop on the
+  same Mac list, search, and read your meetings, for synthesis work that a
+  small local model handles poorly.
 
-## Note templates (added 2026-07-31)
+## Audio and transcription
 
-Pick the AI-note format per meeting (dropdown in the meeting header; changing
-it offers instant regeneration):
+Capture and playback run at 48 kHz; whisper receives a dedicated 16 kHz
+downmix. Quiet or far-field sources get a static gain boost — dynamic
+normalizers are deliberately avoided because they induce hallucination loops.
+Transcription prefers whisper large-v3 when present and falls back to
+large-v3-turbo.
 
-- **General Meeting** — Summary · Action items · Decisions · Topics (default).
-- **Formal Minutes** — official-record style: Attendees, Agenda Items
-  Discussed, Decisions & Resolutions, Action Items, Matters Arising, Next
-  Meeting. Minutes record *outcomes*; the recap records *discussion*.
-- **Lecture / Class** — Key Teachings (with citations), Illustrations &
-  Stories, Practical Applications, Q&A. No invented action items.
-- **Client Discovery** — Fellow's sales template: Outcome, Sentiment, Needs,
-  Decision Maker, Budget, Competitors, Objections.
+Whisper feeds each 30-second window the previous window's text, so a single bad
+window can repeat one sentence through an entire recording. Baruch detects that
+by unique-line ratio and re-transcribes the affected track without cross-window
+context.
 
-Custom templates: add to `data/templates.json` (same shape as the built-ins
-in `note_templates.py` — a template is just named sections with extraction
-prompts).
+Speakers are separated with sherpa-onnx (pyannote segmentation plus ERes2Net
+embeddings) at roughly 11× real time, then matched against stored voiceprints.
+Matching is deliberately conservative — an uncertain voice stays "Speaker N"
+rather than risking a wrong name.
 
-## Storage & retention
+## Layout
 
-- Recordings live ONLY at `data/meetings/<id>/` (audio never leaves your Mac);
-  deleted/merged meetings go to `data/trash/`.
-- **Retention policy (daily sweep): audio older than 30 days is deleted;
-  transcripts, AI notes, and agendas are kept forever.** Trash entries older
-  than 30 days are fully removed. Configure via `retention_days` in
-  `data/settings.json` (0 = keep audio forever). Purged meetings show
-  "audio removed by retention policy" and hide the player.
+- `server.py` — FastAPI: meetings, recording control, uploads, notes, settings.
+- `recorder.py` — crash-safe capture; raw PCM for in-person, echo-cancelled
+  `voicemic` for calls, `systemaudio` for system audio.
+- `pipeline.py` — audio → whisper → diarization → voiceprints → templated note.
+- `calendar_ics.py`, `gcal_writeback.py` — calendar reading and debriefs.
+- `gdoc_export.py`, `obsidian_export.py` — exports.
+- `ask.py`, `search_index.py`, `mcp_server.py` — library intelligence.
+- `static/` — the single-page UI.
+- `data/meetings/<id>/` — audio, transcript, note, agenda. Deleted and merged
+  meetings move to `data/trash/`.
+- `version.py` and `CHANGELOG.md` — release tracking.
 
-## Voice recognition (added 2026-07-30)
+## Known limits
 
-LocalFellow remembers voices and labels known people by name automatically:
+- **Processing runs inside the web server**, so the UI can become unresponsive
+  while a long recording is being transcribed. Moving the pipeline to
+  subprocess workers is the next planned change and the highest-value one.
+- Only daily and weekly calendar recurrences are handled; monthly and yearly
+  events are skipped rather than guessed at.
+- Note quality is bounded by the local model. A 7B model writes accurate but
+  plainer prose than a cloud model would.
 
-- **👤 My name** (sidebar): your mic channel on calls is labelled with your
-  name instead of "Me".
-- **🎤 Enroll voice**: one-time ~20 s recording creates your voiceprint.
-- **Renames teach it**: any all-lines rename to a real name harvests that
-  person's voiceprint from the meeting audio — so everyone you name once is
-  auto-recognized in future recordings.
-- Matching is conservative (cosine ≥ 0.70; calibrated so a wrong name is
-  near-impossible — uncertain voices stay "Speaker N"). Store:
-  `data/voiceprints.json` (up to 6 prints/person, newest kept).
-
-## Ask + search + MCP (upgrade #2, added 2026-07-30)
-
-- **🔮 Ask** (sidebar button): chat with your whole meeting library. Runs a
-  local model via Ollama (default `qwen2.5:7b-instruct`; change with
-  `ask_model` in `data/settings.json` — `hermes3:8b` installed, `gemma4:12b`
-  a candidate). Zero API tokens; answers cite meeting + [MM:SS]. First
-  search is auto-seeded so answers are always grounded.
-- **Search all meetings** box above the library list: full-text over every
-  transcript, note, and title (SQLite FTS5, `data/index.db`, auto-refreshed).
-- **MCP server for Claude** (`mcp_server.py`, registered as `localfellow`,
-  user scope): Claude Code/Desktop on this Mac can list/search meetings and
-  read transcripts/notes/agendas — use Claude for heavy synthesis (multi-
-  meeting summaries, drafting emails) where the local model is too small.
-
-## Known limits (next steps)
-
-- Echo: without headphones, "Me" may duplicate "Others" lines on calls
-  (voice-processing/AEC capture is the planned fix).
-- Next upgrades queued: FTS search index + local Ask panel (hermes3:8b
-  downloaded) + MCP server for Claude; note templates; menu-bar quick-record.
-- See `../PRD-LocalNotetaker.md` for the full roadmap (Esther/Android Phase 2).
+Requires macOS 13+ on Apple Silicon. See `CHANGELOG.md` for release history.

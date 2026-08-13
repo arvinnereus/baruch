@@ -1,5 +1,5 @@
 #!/bin/bash
-# LocalFellow — one-command launcher.
+# Baruch — one-command launcher.
 #   ./run.sh            # starts everything and opens the app in your browser
 set -e
 cd "$(dirname "$0")"
@@ -64,6 +64,6 @@ else
 fi
 
 PORT="${PORT:-8377}"
-echo "LocalFellow → http://127.0.0.1:$PORT"
+echo "Baruch → http://127.0.0.1:$PORT"
 (sleep 1.2 && open "http://127.0.0.1:$PORT") &
 exec .venv/bin/uvicorn server:app --host 127.0.0.1 --port "$PORT"

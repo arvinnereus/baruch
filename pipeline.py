@@ -1,4 +1,4 @@
-"""LocalFellow pipeline: audio tracks -> transcript -> AI Note.
+"""Baruch pipeline: audio tracks -> transcript -> AI Note.
 
 Calibration (2026-07-28, poc/calibrate.sh): feed whisper RAW audio (no filters),
 beam size 8, optional domain-vocabulary prompt. speechnorm/denoise cause
@@ -103,12 +103,12 @@ def drop_silent_segments(segs: list[dict], wav16: Path) -> list[dict]:
     return kept
 
 
-def transcribe(wav: Path, prompt: str = "") -> list[dict]:
-    """Return [{start_ms, end_ms, text}] using the calibrated recipe."""
-    src = whisper_input(wav)
-    out = wav.with_suffix("")
+def _whisper_pass(src: Path, out: Path, prompt: str,
+                  extra: list[str] | None = None) -> list[dict]:
     cmd = ["whisper-cli", "-m", str(whisper_model()), "-f", str(src),
            "-bs", "8", "-bo", "8", "-oj", "-of", str(out)]
+    if extra:
+        cmd += extra
     if prompt.strip():
         cmd += ["--prompt", prompt.strip()]
     run(cmd)
@@ -123,6 +123,30 @@ def transcribe(wav: Path, prompt: str = "") -> list[dict]:
             continue
         segs.append({"start_ms": s["offsets"]["from"],
                      "end_ms": s["offsets"]["to"], "text": text})
+    return segs
+
+
+def _uniq_ratio(segs: list[dict]) -> float:
+    if not segs:
+        return 1.0
+    texts = [s["text"] for s in segs]
+    return len(set(texts)) / len(texts)
+
+
+def transcribe(wav: Path, prompt: str = "") -> list[dict]:
+    """Return [{start_ms, end_ms, text}] using the calibrated recipe."""
+    src = whisper_input(wav)
+    out = wav.with_suffix("")
+    segs = _whisper_pass(src, out, prompt)
+    # Whisper feeds each 30s window the previous window's text — one bad
+    # window can poison the whole rest of the file with a repeating loop.
+    # Consecutive-dedupe can't catch alternating two-line loops (a 43-min
+    # lecture once collapsed to "Okay."/one sentence × 1000 each), so
+    # detect by unique-line ratio and redo without cross-window context.
+    if len(segs) >= 30 and _uniq_ratio(segs) < 0.5:
+        retry = _whisper_pass(src, out, prompt, extra=["-mc", "0"])
+        if _uniq_ratio(retry) > _uniq_ratio(segs):
+            segs = retry
     return dedupe_loops(segs)
 
 

@@ -8,7 +8,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 CACHE_TTL = 300
-_cache: dict = {"url": None, "at": None, "events": []}
+_caches: dict = {}  # url -> {"at": datetime, "events": [...]}
 
 WEEKDAYS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]
 
@@ -46,7 +46,7 @@ def _parse_dt(prop: str, value: str, default_tz):
 def _fetch(url: str) -> str:
     if url.startswith("file://"):  # for tests
         return Path(url[7:]).read_text(encoding="utf-8")
-    req = urllib.request.Request(url, headers={"User-Agent": "LocalFellow/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "Baruch/1.0"})
     with urllib.request.urlopen(req, timeout=15) as r:
         return r.read().decode("utf-8", "replace")
 
@@ -160,12 +160,30 @@ def _occurs_today(ev, today: date) -> datetime | None:
     return None  # MONTHLY/YEARLY etc. not supported — better to miss than phantom
 
 
+def today_events_all(urls: list[str]):
+    """Today's meetings across MULTIPLE calendars, merged and deduplicated
+    (same title + start time counts as one event)."""
+    out, seen = [], set()
+    for u in urls:
+        try:
+            evs = today_events(u)
+        except Exception:
+            continue  # one broken calendar must not kill the others
+        for e in evs:
+            key = (e.get("title"), e.get("start_hm"))
+            if key not in seen:
+                seen.add(key)
+                out.append(e)
+    out.sort(key=lambda e: e["start_epoch"])
+    return out
+
+
 def today_events(url: str):
-    """Today's meetings, sorted by start time, cached 5 min."""
+    """Today's meetings for one calendar, sorted by start, cached 5 min."""
     now = datetime.now().astimezone()
-    if _cache["url"] == url and _cache["at"] and \
-            (now - _cache["at"]).total_seconds() < CACHE_TTL:
-        return _cache["events"]
+    c = _caches.get(url)
+    if c and (now - c["at"]).total_seconds() < CACHE_TTL:
+        return c["events"]
     events = parse_events(_fetch(url))
     today = now.date()
     out, seen = [], set()
@@ -186,5 +204,5 @@ def today_events(url: str):
                     "attendees": ev["attendees"][:12],
                     "start_epoch": int(st.timestamp())})
     out.sort(key=lambda e: e["start_epoch"])
-    _cache.update({"url": url, "at": now, "events": out})
+    _caches[url] = {"at": now, "events": out}
     return out
