@@ -48,6 +48,8 @@ NOT_FOUND = [
     "no clear", "no specific", "not specifically", "no details", "no data",
     "nothing specific", "not addressed", "no discussion", "did not find",
     "cannot find", "can't find", "no such", "not covered", "no evidence",
+    "does not specify", "doesn't specify", "not specify", "does not mention",
+    "doesn't mention", "not explicitly", "no explicit",
 ]
 # a refusal that still smuggles in a specific claim is not honest
 FABRICATION = re.compile(r"\b(?:\$|usd|sgd)\s?\d|\b\d{1,2}:\d{2}\b|\b20\d\d-\d\d-\d\d\b")

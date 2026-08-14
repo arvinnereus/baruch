@@ -49,7 +49,7 @@ pgrep -f "$PWD/menubar" > /dev/null || ("$PWD/menubar" > /dev/null 2>&1 &)
 if [ ! -d .venv ]; then
   echo "Creating Python env…"
   python3 -m venv .venv
-  .venv/bin/pip -q install "fastapi>=0.110" "uvicorn>=0.29" "python-multipart>=0.0.9" "python-docx>=1.1" "sherpa-onnx>=1.13" "numpy>=2" "mcp>=2"
+  .venv/bin/python -m pip -q install "fastapi>=0.110" "uvicorn>=0.29" "python-multipart>=0.0.9" "python-docx>=1.1" "sherpa-onnx>=1.13" "numpy>=2" "mcp>=2"
 fi
 
 # --- Ollama (AI notes) ---
@@ -66,4 +66,7 @@ fi
 PORT="${PORT:-8377}"
 echo "Baruch → http://127.0.0.1:$PORT"
 (sleep 1.2 && open "http://127.0.0.1:$PORT") &
-exec .venv/bin/uvicorn server:app --host 127.0.0.1 --port "$PORT"
+# NOT .venv/bin/uvicorn: console-script shebangs bake in the absolute
+# path the venv was created at, and the app has moved since. Invoking
+# through the python symlink survives any future relocation.
+exec .venv/bin/python -m uvicorn server:app --host 127.0.0.1 --port "$PORT"

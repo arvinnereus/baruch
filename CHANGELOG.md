@@ -4,6 +4,18 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows beside the
 app name in the sidebar; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## 1.4.2 — 2026-08-14
+
+### Fixed
+- **The server could not start at all.** `.venv/bin/uvicorn` is a console
+  script whose shebang hard-codes the absolute path the venv was created at —
+  the pre-2026-08-04 location, reached through a symlink that has since been
+  deleted. launchd restarted the server in a loop, each attempt dying with
+  "cannot execute: No such file or directory", and the app was simply down.
+  `run.sh` now launches through `.venv/bin/python -m uvicorn` (a relative
+  symlink to the real interpreter), which survives any future relocation; pip
+  is invoked the same way for the same reason.
+
 ## 1.4.1 — 2026-08-14
 
 ### Changed
