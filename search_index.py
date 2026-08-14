@@ -89,14 +89,84 @@ def _fts_query(q: str) -> str:
     return " OR ".join(f'"{w}"' for w in keep) if keep else '""'
 
 
+NOTE_BONUS = 1.5     # bm25 is negative; subtracting ranks notes higher
+MIN_UTTERANCE = 60   # chars — shorter matches are noise, not evidence
+SNIPPET_TOKENS = 60  # FTS5 caps snippet() at 64
+NOTE_WINDOW = (250, 750)  # chars kept before/after a match inside a note
+
+
+def _window(text: str, terms: list[str]) -> str:
+    """A generous window around the first matching term.
+
+    The old 18-token snippet was the real reason Ask answered wrongly from
+    correct hits: a note chunk would match on 'personality types' and hand the
+    model the summary line, while the actual answer sat 600 characters further
+    down the same chunk. Retrieval was never the whole problem — what got
+    passed on was."""
+    low = text.lower()
+    i = min((low.find(t.lower()) for t in terms if t and low.find(t.lower()) >= 0),
+            default=-1)
+    if i < 0:
+        return text[:sum(NOTE_WINDOW)]
+    before, after = NOTE_WINDOW
+    start, end = max(0, i - before), min(len(text), i + after)
+    return ("…" if start else "") + text[start:end].strip() + \
+           ("…" if end < len(text) else "")
+
+
 def search(query: str, limit: int = 12) -> list[dict]:
     refresh()
+    terms = [w.strip('.,?!:;()"\'') for w in query.split()
+             if w.strip('.,?!:;()"\'').lower() not in _STOP]
+    # Query the two kinds SEPARATELY. Ranking them together is useless: a
+    # transcript has thousands of short utterances to a handful of note
+    # sections, so notes never even reached the fetch window and any bonus
+    # applied to them was academic.
+    sql = f"""SELECT mid, title, kind, speaker, ts_ms,
+                     snippet(chunks, 5, '[', ']', '…', {SNIPPET_TOKENS}),
+                     bm25(chunks), text
+              FROM chunks WHERE chunks MATCH ? AND kind {{}} 'note'
+              ORDER BY bm25(chunks) LIMIT ?"""
     c = _conn()
-    rows = c.execute(
-        """SELECT mid, title, kind, speaker, ts_ms,
-                  snippet(chunks, 5, '[', ']', '…', 18), bm25(chunks)
-           FROM chunks WHERE chunks MATCH ? ORDER BY bm25(chunks) LIMIT ?""",
-        (_fts_query(query), limit)).fetchall()
+    fts = _fts_query(query)
+    rows = c.execute(sql.format("="), (fts, max(limit, 12))).fetchall() + \
+        c.execute(sql.format("!="), (fts, max(limit * 6, 40))).fetchall()
     c.close()
-    return [{"meeting_id": r[0], "meeting_title": r[1], "kind": r[2],
-             "speaker": r[3], "ts_ms": r[4], "snippet": r[5]} for r in rows]
+
+    scored = []
+    for mid, title, kind, speaker, ts, snip, score, text in rows:
+        if kind != "note" and len(text or "") < MIN_UTTERANCE:
+            continue  # "I taught him." outranking a whole teaching section
+        scored.append((score,
+                       {"meeting_id": mid, "meeting_title": title, "kind": kind,
+                        "speaker": speaker, "ts_ms": ts,
+                        "snippet": _window(text, terms) if kind == "note" else snip}))
+    scored.sort(key=lambda x: x[0])
+
+    # Reserve slots for note chunks. A rank bonus alone never works: a question
+    # like "what is emotional contagion" appears verbatim in a dozen short
+    # utterances, and bm25 always prefers short documents, so the AI note —
+    # the one place the answer is stated plainly — got crowded out every time.
+    notes = [h for _, h in scored if h["kind"] == "note"]
+    rest = [h for _, h in scored if h["kind"] != "note"]
+
+    # Let the utterance hits vote on which meeting matters. A question like
+    # "what is emotional contagion" matches the phrase in many meetings, but
+    # the section that DEFINES it sits in the notes of the meeting the
+    # transcript hits already agree on — globally it ranked 9th.
+    voted = {h["meeting_id"] for h in rest[:5]}
+    notes.sort(key=lambda h: h["meeting_id"] not in voted)  # stable
+    keep_notes = notes[:max(1, limit // 2)]
+
+    # ...and cap one meeting dominating the utterance slots, so a question
+    # spanning several meetings still sees all of them
+    per_meeting, picked = {}, []
+    for h in rest:
+        n = per_meeting.get(h["meeting_id"], 0)
+        if n >= 3:
+            continue
+        per_meeting[h["meeting_id"]] = n + 1
+        picked.append(h)
+
+    out = keep_notes + picked[:max(0, limit - len(keep_notes))]
+    return out[:limit]

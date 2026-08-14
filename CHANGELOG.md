@@ -4,6 +4,34 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows in the sidebar
 footer; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## 1.4.0 — 2026-08-14
+
+### Changed
+- **Search rewritten for Ask.** Scored retrieval recall — whether the answer
+  is even present in the context the model receives — went from **43% to
+  100%** on a graded question set, and 100% on a held-out set of questions
+  never used while tuning. Four distinct faults, none of them the model's:
+  - The model was handed an **18-token snippet**. A note section could match
+    correctly and still pass on the summary line while the actual answer sat
+    600 characters further down the same chunk. Notes now return a generous
+    window around the match.
+  - **Notes and utterances were ranked together.** A transcript has thousands
+    of short utterances to a handful of note sections, and bm25 prefers short
+    documents, so the AI note — the one place an answer is stated plainly —
+    never even reached the ranking stage. The two are now queried separately
+    and notes get reserved slots.
+  - **Trivial matches outranked real evidence.** "I taught him." beat an
+    entire teaching section. Utterance chunks under 60 characters are dropped.
+  - **One meeting could take every slot**, so cross-meeting questions saw only
+    part of the picture. Utterance hits are capped at three per meeting, and
+    those hits now vote on whose notes to pull — the section defining a term
+    is usually in the meeting the transcript hits already agree on.
+
+### Added
+- `retrieval_check.py` — scores retrieval on its own, with no LLM involved. A
+  wrong answer can come from bad retrieval or from the model ignoring good
+  context; those need opposite fixes, so they are now measured separately.
+
 ## 1.3.0 — 2026-08-14
 
 ### Removed
