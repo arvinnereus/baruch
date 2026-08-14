@@ -68,15 +68,31 @@ def note_text(note: dict) -> str:
     return "\n".join(x for x in out if x)
 
 
-def bullets(note: dict) -> list[str]:
+def bullet_items(note: dict) -> list[dict]:
+    """Bullets with their timestamp. The timestamp is a separate `ts` field,
+    not inline in the text — scanning the text for "(MM:SS)" found nothing and
+    reported timestamp accuracy as unmeasurable."""
     out = []
     for t in (note.get("topics") or []) + (note.get("sections") or []):
-        out += [b.get("text", "") if isinstance(b, dict) else str(b)
-                for b in (t.get("bullets") or [])]
+        for b in t.get("bullets") or []:
+            out.append(b if isinstance(b, dict) else {"text": str(b)})
     for key in ("action_items", "decisions"):
-        out += [i.get("text", "") if isinstance(i, dict) else str(i)
-                for i in (note.get(key) or [])]
-    return [b for b in out if b]
+        for i in note.get(key) or []:
+            out.append(i if isinstance(i, dict) else {"text": str(i)})
+    return [b for b in out if b.get("text")]
+
+
+def bullets(note: dict) -> list[str]:
+    return [b["text"] for b in bullet_items(note)]
+
+
+def section_titles(note: dict) -> set[str]:
+    """Template-supplied headings ("Key Teachings", "Attendees") are not the
+    model's words and must not count as invented names."""
+    out = set()
+    for t in (note.get("topics") or []) + (note.get("sections") or []):
+        out |= {w.lower() for w in re.findall(r"[A-Za-z]{2,}", t.get("title", ""))}
+    return out
 
 
 def timestamps(note: dict) -> list[int]:
@@ -91,31 +107,40 @@ def score(note: dict, segs: list[dict], duration_s: int) -> dict:
     tr_text = " ".join(s.get("text", "") for s in segs)
     tr_words = set(words(tr_text))
 
-    # names invented by the model
-    # Compare against EVERY word in the transcript, not only capitalised ones:
+    # Names the model invented.
+    # Compared against EVERY word in the transcript, not only capitalised ones:
     # a word the note capitalises ("Sealed by blood") is usually lowercase in
     # speech, and matching only capitals reported it as invented.
-    # No sentence-position exclusion either — that silently exempted exactly
-    # the case this exists to catch, an invented name opening a sentence.
     allowed = {w.lower() for w in re.findall(r"[A-Za-z]{2,}", tr_text)}
     for s in {s.get("speaker", "") for s in segs}:
         allowed |= {w.lower() for w in re.findall(r"[A-Za-z]{2,}", s or "")}
-    cited_names = {w.lower() for w in re.findall(r"\b[A-Z][a-z]{2,}\b", text)}
-    invented = sorted(n for n in cited_names - allowed if n not in STOP)[:6]
+    # Only MID-SENTENCE capitals: a word opening a sentence or bullet is
+    # capitalised by grammar, not because it is a name ("Adapt your style…").
+    # The real defect looked like "led by Chin" — mid-sentence — so this keeps
+    # what matters and drops the noise.
+    # [ \t]+ not \s+ : bullets are joined by newlines, so \s treated every
+    # bullet's first word as mid-sentence and flagged ordinary verbs
+    cited_names = {m.group(1).lower() for m in
+                   re.finditer(r"[a-z,][ \t]+([A-Z][a-z]{2,})\b", text)}
+    invented = sorted(n for n in cited_names - allowed - section_titles(note)
+                      if n not in STOP)[:6]
 
-    ts = timestamps(note)
+    ts = timestamps(note) + [int(m.group(1))*60+int(m.group(2))
+          for b in bullet_items(note)
+          for m in [re.match(r"(\d{1,3}):(\d{2})", str(b.get("ts") or ""))] if m]
     bad_ts = [t for t in ts if duration_s and t > duration_s + 60]
 
     # does a sampled bullet's timestamp land near matching words?
     near = tot = 0
-    for b in bullets(note)[:12]:
-        m = re.search(r"\((\d{1,3}):(\d{2})\)", b)
+    for b in bullet_items(note)[:12]:
+        m = re.match(r"(\d{1,3}):(\d{2})", str(b.get("ts") or "")) or \
+            re.search(r"\((\d{1,3}):(\d{2})\)", b["text"])
         if not m:
             continue
         at = (int(m.group(1)) * 60 + int(m.group(2))) * 1000
         window = " ".join(s.get("text", "") for s in segs
                           if abs(s.get("start_ms", 0) - at) < 120000).lower()
-        bw = set(words(b))
+        bw = set(words(b["text"]))
         if bw:
             tot += 1
             near += len(bw & set(words(window))) / len(bw) >= 0.25

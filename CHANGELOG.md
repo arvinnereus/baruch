@@ -4,6 +4,19 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows beside the
 app name in the sidebar; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## 1.7.1 — 2026-08-14
+
+### Fixed
+- **note_quality.py measured two things wrongly**, found on its first real run
+  rather than by inspection:
+  - Timestamp accuracy read "n/a" for every note. Bullets carry their
+    timestamp in a separate `ts` field, not inline in the text, so the scan
+    found none.
+  - Invented-name detection flagged template headings ("Attendees",
+    "Applications") and ordinary verbs opening a bullet ("Adapt your style").
+    Template titles are now excluded, and only mid-sentence capitals count —
+    which is what the original defect looked like ("led by Chin").
+
 ## 1.7.0 — 2026-08-14
 
 ### Added
