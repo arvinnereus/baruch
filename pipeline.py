@@ -166,9 +166,20 @@ def dedupe_loops(segs: list[dict]) -> list[dict]:
 
 
 def ollama_model() -> str | None:
+    """The model that writes AI notes. `note_model` in data/settings.json wins,
+    then LLM_PREFERRED, then whatever is installed. Ask has always been
+    configurable; notes were not, which meant the model writing every class
+    note could not be chosen or compared."""
     try:
         with urllib.request.urlopen(OLLAMA + "/api/tags", timeout=3) as r:
             names = [m["name"] for m in json.load(r).get("models", [])]
+        try:
+            f = APP_DIR / "data" / "settings.json"
+            want = json.loads(f.read_text(encoding="utf-8")).get("note_model")
+            if want and want in names:
+                return want
+        except Exception:
+            pass
         for want in LLM_PREFERRED:
             if want in names:
                 return want
@@ -316,10 +327,10 @@ def _ordered_sections(tpl: dict, collected: dict) -> list[dict]:
 
 
 def generate_note(segs: list[dict], context: str, mdir: Path,
-                  template_id: str = "general") -> dict:
+                  template_id: str = "general", model: str | None = None) -> dict:
     import note_templates
     tpl = note_templates.by_id(template_id)
-    model = ollama_model()
+    model = model or ollama_model()
     if not model:
         return {"error": "Ollama is not running — start it and click Regenerate."}
     lines = [f"[{fmt_ts(s['start_ms'])}] {s.get('speaker','Speaker')}: {s['text']}"

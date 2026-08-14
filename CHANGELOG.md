@@ -4,6 +4,31 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows beside the
 app name in the sidebar; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## 1.7.0 — 2026-08-14
+
+### Added
+- **The note model is now configurable** — `note_model` in
+  `data/settings.json`, falling back to the old preference list. Ask has
+  always been configurable; the model writing every class note was hardcoded,
+  so it could neither be chosen nor compared.
+- **`note_quality.py` — scores AI-note quality against real meetings.** Note
+  quality sounds subjective, but every note failure this project has actually
+  suffered is objectively checkable, and those are what it measures:
+  - **invented names** — a note once credited a class to "Chin", a person
+    never in the meeting, because prompt example names leaked into the output.
+    Every capitalised word in the note must appear in the transcript.
+  - **timestamps outside the recording** — a note citing (58:14) on a
+    40-minute meeting is fabricated structure.
+  - **timestamp accuracy** — a sampled bullet's timestamp must land near text
+    that shares its wording. A plausible timestamp on the wrong moment is
+    worse than none.
+  - plus transcript-vocabulary coverage (catches fluent but empty notes),
+    duplicate bullets, empty template sections, and time per note.
+
+  It generates into a temp directory and never touches the stored note.
+  Verified against a deliberately hallucinated note before use: it flags the
+  invented name and the impossible timestamp, and passes a grounded one.
+
 ## 1.6.1 — 2026-08-14
 
 ### Changed
