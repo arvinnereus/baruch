@@ -4,6 +4,16 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows beside the
 app name in the sidebar; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## 1.5.0 — 2026-08-14
+
+### Changed
+- **Auto-merge verified and now ON by default.** Parts of one meeting recorded
+  on the same day are combined into a single record automatically once the
+  last part finishes processing. Verified end to end against real audio: two
+  parts merged into exactly one record, and a decoy meeting recorded the same
+  day under a different title was left untouched. Set `"auto_merge": false`
+  in `data/settings.json` to turn it off.
+
 ## 1.4.2 — 2026-08-14
 
 ### Fixed

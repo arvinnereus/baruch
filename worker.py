@@ -87,10 +87,10 @@ def auto_merge(d: Path, meta: dict):
     """Silently merge this finished recording with the other parts of the same
     meeting recorded today. Runs in the worker, so waiting for a sibling that
     is still processing costs the server nothing."""
-    # default OFF until the end-to-end test has run against real recordings:
-    # silently combining a user's meetings on untested code is not a risk
-    # worth taking. Set "auto_merge": true in data/settings.json to enable.
-    if not _settings().get("auto_merge", False) or meta.get("no_automerge"):
+    # Verified end-to-end 2026-08-14: two parts of one meeting merge, and a
+    # different meeting recorded the same day is left untouched.
+    # Set "auto_merge": false in data/settings.json to turn this off.
+    if not _settings().get("auto_merge", True) or meta.get("no_automerge"):
         return
     me_id = d.name
     if not _siblings(me_id, meta):
