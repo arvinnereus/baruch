@@ -46,6 +46,7 @@ _PRELUDE = '''
   copy dStart to dEnd
   set time of dEnd to 86340
   set dLow to dStart - (62 * days)
+  with timeout of 900 seconds
   tell application "Calendar"
     set c to first calendar whose name is theCal
     -- summary-only `whose` (compound date conditions make Calendar.app's
@@ -85,13 +86,18 @@ on run argv
     if oldDesc is not "" then
       set AppleScript's text item delimiters to theMarker
       set kept to text item 1 of oldDesc
-      set AppleScript's text item delimiters to oldMarker
-      set kept to text item 1 of kept
+      -- "text item 1 of" throws -1728 on an empty string: an event whose
+      -- description is ONLY a previous debrief leaves kept empty here
+      if kept is not "" then
+        set AppleScript's text item delimiters to oldMarker
+        set kept to text item 1 of kept
+      end if
       set AppleScript's text item delimiters to ""
     end if
     set description of best to (kept & newBlock)
     return "ok"
   end tell
+  end timeout
 end run
 '''
 
@@ -184,7 +190,7 @@ def write_debrief(title: str, created_at: int, note: dict, gdoc_path: str = "") 
     for cal in calendars:
         try:
             res = _osascript(UPSERT_SCRIPT, cal, *dargs, block, MARKER,
-                             LEGACY_MARKERS[0], timeout=240)
+                             LEGACY_MARKERS[0], timeout=960)
         except Exception as e:
             failures.append(f"{cal}: {e}")  # slow/broken calendar — move on
             continue

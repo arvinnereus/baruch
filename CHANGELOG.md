@@ -4,6 +4,39 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows in the sidebar
 footer; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## 1.3.0 — 2026-08-14
+
+### Removed
+- **Collapsible sidebar.** It never worked reliably and the sidebar is the
+  app's only navigation. Any saved "collapsed" state is cleared on load so a
+  browser that stored one is not left with a permanently hidden sidebar.
+
+### Added
+- **Auto-merge, off by default** (`"auto_merge": true` in settings to enable).
+  When a recording finishes processing, other parts of the same meeting from
+  the same day are combined into one record automatically. The match rule is
+  deliberately strict — same day AND either the same calendar event or an
+  exact title — because silently merging two genuinely different meetings is
+  far worse than leaving two parts separate.
+  Because processing runs in a worker subprocess, a finishing part can wait
+  for a sibling that is still transcribing without blocking the server, which
+  is what stops a day being left split.
+  Shipped disabled: it has been unit-tested on the match rule but the
+  end-to-end test has not yet run against real recordings.
+
+## 1.2.1 — 2026-08-13
+
+### Fixed
+- **Calendar debriefs threw on events whose description was only a previous
+  debrief.** Introduced in 1.1.0: keeping backwards compatibility with the old
+  marker added a second strip pass, and `text item 1 of ""` raises -1728 in
+  AppleScript. Today's class silently got no debrief because of it.
+- **AppleScript's own two-minute event timeout** was aborting the calendar
+  query on large calendars, independently of the subprocess timeout raised
+  earlier — reported to the user as a misleading "event not found". The
+  script now declares a 900-second window explicitly. This is the real cause
+  of debriefs having been intermittent rather than reliably broken.
+
 ## 1.2.0 — 2026-08-13
 
 ### Changed

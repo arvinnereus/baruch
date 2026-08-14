@@ -810,14 +810,11 @@ setInterval(() => { if (pillMeeting) refreshList(); }, 10000);
 setInterval(() => { if (!$("#offline").hidden) refreshList(); }, 15000);
 
 /* ---------- collapsible sidebar ---------- */
-function setSidebar(collapsed) {
-  document.body.classList.toggle("side-collapsed", collapsed);
-  $("#side-expand").hidden = !collapsed;
-  localStorage.setItem("lf-sidebar", collapsed ? "collapsed" : "open");
-}
-$("#btn-collapse").onclick = () => setSidebar(true);
-$("#side-expand").onclick = () => setSidebar(false);
-if (localStorage.getItem("lf-sidebar") === "collapsed") setSidebar(true);
+// Collapsible sidebar removed — it never worked reliably and the sidebar is
+// the app's primary navigation. Clear any stored collapsed state so a browser
+// that saved one is not left with a permanently hidden sidebar.
+localStorage.removeItem("lf-sidebar");
+document.body.classList.remove("side-collapsed");
 
 /* ---------- version badge ---------- */
 async function showVersion() {
