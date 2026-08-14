@@ -4,6 +4,18 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows beside the
 app name in the sidebar; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## 1.6.1 — 2026-08-14
+
+### Changed
+- **Ask now runs .** Scored against hermes3:8b on the same graded
+  set: **90% overall vs 70%** (grounded 86% vs 71%, honesty 100% vs 67%,
+  cited a real source 6/7 vs 0/7). It is 3.5× slower — 19 s vs 5 s per answer
+  — which is the right trade for a library of class material: a correct,
+  cited answer beats a fast wrong one. Change `ask_model` in
+  `data/settings.json` to switch back.
+  Note generation still uses `qwen2.5:7b-instruct` and has NOT been
+  benchmarked; that is the next open item.
+
 ## 1.6.0 — 2026-08-14
 
 ### Added
