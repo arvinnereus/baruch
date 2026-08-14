@@ -1,7 +1,7 @@
 # Changelog
 
-Versions follow `MAJOR.MINOR.PATCH`. The installed version shows in the sidebar
-footer; the Update banner names the version it is offering. Bump `version.py`
+Versions follow `MAJOR.MINOR.PATCH`. The installed version shows beside the
+app name in the sidebar; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
 ## 1.4.1 — 2026-08-14
