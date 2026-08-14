@@ -816,6 +816,21 @@ setInterval(() => { if (!$("#offline").hidden) refreshList(); }, 15000);
 localStorage.removeItem("lf-sidebar");
 document.body.classList.remove("side-collapsed");
 
+/* ---------- health ---------- */
+// Both outages on 2026-08-14 were silent: a recording would have transcribed
+// and produced no AI note with nothing on screen to say why.
+async function refreshHealth() {
+  const el = $("#health-banner");
+  let h;
+  try { h = await api("/health"); } catch { el.hidden = true; return; }
+  if (h.ok) { el.hidden = true; return; }
+  el.innerHTML = "<b>Baruch needs attention</b> — " +
+    h.problems.map(p => p.replace(/</g, "&lt;")).join(" · ");
+  el.hidden = false;
+}
+refreshHealth();
+setInterval(refreshHealth, 120000);
+
 /* ---------- version badge ---------- */
 async function showVersion() {
   try {

@@ -4,6 +4,26 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows beside the
 app name in the sidebar; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## 1.6.0 — 2026-08-14
+
+### Added
+- **Health watchdog.** Two outages ran unnoticed on 2026-08-14: Ollama stopped
+  (a class would have transcribed and produced no AI note, silently) and the
+  server could not start at all, looping for hours. Neither surfaced anywhere
+  — the offline banner only exists inside a browser tab, which is closed
+  precisely when you are in the meeting being recorded.
+  - `/api/health` reports what must be true for Baruch to work: Ollama
+    answering, whisper-cli present, disk space, and meetings stuck
+    mid-processing. Reachable from any device on the network.
+  - `watchdog.py` runs every 5 minutes from its own LaunchAgent. It repairs
+    what it can — restarts Ollama, restarts the server, bootstraps the
+    LaunchAgent back if it was unloaded entirely, restarts a stalled worker —
+    and raises a macOS notification for anything it cannot fix. Notifications
+    are deduplicated so a persistent fault does not nag every five minutes.
+    Verified by killing Ollama, killing the server, and unloading the
+    LaunchAgent: all three were detected and repaired.
+  - A banner in the app names the problem when something is wrong.
+
 ## 1.5.0 — 2026-08-14
 
 ### Changed

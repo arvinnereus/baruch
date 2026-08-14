@@ -123,6 +123,9 @@ select { background: var(--panel2); color: var(--text); border: 1px solid var(--
   border-radius: 7px; cursor: pointer; font-size: 13.5px; }
 #menu-pop button:hover { background: var(--panel); }
 
+#health-banner { margin: 0 0 14px; background: #3a2410; border: 1px solid var(--warn);
+  color: #ffd9a0; padding: 11px 16px; border-radius: 10px; font-size: 13.5px; }
+#health-banner b { color: var(--warn); }
 #rec-banner { margin: 14px 0; background: #2a1518; border: 1px solid var(--rec);
   padding: 10px 14px; border-radius: 10px; display: flex; gap: 10px; align-items: center; }
 .rec-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--rec);

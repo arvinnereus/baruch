@@ -264,6 +264,62 @@ def _disk_version() -> str:
         return version.VERSION
 
 
+STUCK_AFTER_S = 3600  # a meeting untouched this long is not really processing
+
+
+def health_report() -> dict:
+    """What must be true for Baruch to actually work. Both outages on
+    2026-08-14 (Ollama stopped; the server could not start) were invisible
+    until something unrelated exposed them — a recording would have produced a
+    transcript and silently no AI note."""
+    import shutil
+    import urllib.error
+    import urllib.request
+
+    problems, checks = [], {}
+
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:11434/api/tags", timeout=4):
+            checks["ollama"] = True
+    except Exception:
+        checks["ollama"] = False
+        problems.append("Ollama is not running — AI notes and Ask cannot work")
+
+    checks["whisper"] = bool(shutil.which("whisper-cli"))
+    if not checks["whisper"]:
+        problems.append("whisper-cli not found — recordings cannot be transcribed")
+
+    free_gb = shutil.disk_usage(APP_DIR).free / 1e9
+    checks["disk_free_gb"] = round(free_gb, 1)
+    if free_gb < 5:
+        problems.append(f"only {free_gb:.1f} GB free — recordings may fail")
+
+    stuck = []
+    for d in DATA.iterdir():
+        f = d / "meeting.json"
+        if not f.exists():
+            continue
+        try:
+            m = json.loads(f.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if m.get("status") in ("processing", "noting") and \
+                time.time() - f.stat().st_mtime > STUCK_AFTER_S and \
+                not _worker_alive(m.get("worker_pid"), d):
+            stuck.append(d.name)
+    checks["stuck_meetings"] = stuck
+    if stuck:
+        problems.append(f"{len(stuck)} meeting(s) stuck mid-processing")
+
+    return {"ok": not problems, "problems": problems, "checks": checks,
+            "version": version.VERSION}
+
+
+@app.get("/api/health")
+def health():
+    return health_report()
+
+
 @app.get("/api/version")
 def app_version():
     return {"version": version.VERSION, "released": version.RELEASED,
