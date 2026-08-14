@@ -822,7 +822,11 @@ async function showVersion() {
     const v = await api("/version");
     const el = $("#app-version");
     el.textContent = "v" + v.version;
-    el.title = `Version ${v.version} — released ${v.released}`;
+    // the running server, not the code on disk — an update that has been
+    // downloaded but not applied must not be reported as installed
+    el.title = v.disk_version && v.disk_version !== v.version
+      ? `Running v${v.version} (released ${v.released}) — v${v.disk_version} ready to install`
+      : `Version ${v.version} — released ${v.released}`;
   } catch { /* server down: the offline banner already says so */ }
 }
 showVersion();

@@ -4,6 +4,15 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows in the sidebar
 footer; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## 1.4.1 — 2026-08-14
+
+### Changed
+- **Version badge moved beside the app name** in the sidebar header, where it
+  is actually visible — it was buried in the footer. Its tooltip reports the
+  RUNNING version and names a downloaded-but-not-yet-applied update
+  separately, so the badge can never claim an update is installed when the
+  server is still running the old code.
+
 ## 1.4.0 — 2026-08-14
 
 ### Changed

@@ -39,8 +39,9 @@ body { font: 15px/1.55 -apple-system, "SF Pro Text", Helvetica, sans-serif;
   display: flex; align-items: center; gap: 6px; }
 .upload-label:hover { color: var(--text); }
 .foot-row { display: flex; gap: 16px; margin-top: 10px; align-items: center; }
-.foot-row .version { margin-left: auto; color: var(--muted); font-size: 11.5px;
-  opacity: .7; font-variant-numeric: tabular-nums; }
+.logo .version { color: var(--muted); font-size: 11px; font-weight: 500;
+  background: var(--chip); border-radius: 20px; padding: 1px 7px;
+  font-variant-numeric: tabular-nums; letter-spacing: .2px; }
 .foot-row .linkbtn { color: var(--muted); font-size: 12.5px; padding: 0;
   display: flex; align-items: center; gap: 5px; }
 .foot-row .linkbtn:hover { color: var(--text); }
