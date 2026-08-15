@@ -4,6 +4,34 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows beside the
 app name in the sidebar; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## Benchmark result — notes stay on qwen2.5:7b-instruct (2026-08-15)
+
+Scored on the two longest classes (192 min / 153 min, lecture template):
+
+| | qwen2.5:7b-instruct | gemma4:12b |
+|---|---|---|
+| time per note | **5 min** | 43 min, then 10 hours |
+| transcript-vocabulary coverage | 24% | **40%** |
+| bullets per note | 103 | 158 |
+| duplicate bullets | 0 | 0 |
+| timestamps outside the recording | 0 | 0 |
+| empty template sections | 0 | 2 |
+
+**Decision: keep qwen2.5:7b-instruct for notes.** gemma4 writes a fuller note —
+40% coverage against 24% — but took 43 minutes on the first class and **10
+hours** on the second, against qwen's steady ~5 minutes. A note that arrives
+the next day is not a note. Speed disqualifies it here regardless of quality,
+which is the opposite conclusion to Ask, where 19 s versus 5 s per answer was
+a trade worth making.
+
+`note_model` in settings makes this a one-line change if a faster machine or a
+smaller-but-better model appears.
+
+Caveat, stated because the numbers are on record: this run used the pre-1.7.1
+scorer, so its **timestamp-accuracy and invented-name columns are artifacts**
+and were ignored. Coverage, bullet counts, duplicates and timings are sound,
+and speed alone settles the decision.
+
 ## 1.7.1 — 2026-08-14
 
 ### Fixed
