@@ -14,7 +14,8 @@ every word from dictation.*
 
 ```bash
 brew install whisper-cpp ffmpeg ollama
-ollama pull qwen2.5:7b-instruct   # notes; hermes3:8b recommended for Ask
+ollama pull qwen2.5:7b-instruct   # writes the notes
+ollama pull gemma4:12b            # answers Ask (see "Ask, search, and MCP")
 ./run.sh                          # opens http://127.0.0.1:8377
 ```
 
@@ -41,11 +42,16 @@ captured for online meetings; macOS re-asks roughly monthly.
    transcript to rename them — one line or every line they spoke.
 6. **⬆ Upload** any M4A/WAV/MP3/WEBM/MP4 for the same treatment.
 
-Recordings can also be started from the menu bar or from a calendar event, and
-several recordings of one meeting can be merged into a single note afterwards.
+Recordings can also be started from the menu bar or from a calendar event.
 
 ## What it does automatically
 
+- **Combines the parts of one meeting.** A class interrupted by breaks or a
+  restart arrives as several recordings; parts from the same day sharing a
+  calendar event or exact title merge themselves into one record once the last
+  finishes. Deliberately strict — silently merging two different meetings is
+  far worse than leaving two parts apart. Turn it off with
+  `"auto_merge": false`; several recordings can still be merged by hand.
 - **Names the speakers it knows.** Voiceprints are learned from any rename, so
   people you name once are recognized in every later recording.
 - **Exports the note** as a formatted `.docx` to `My Drive/Baruch/` (opens
@@ -91,9 +97,13 @@ extraction prompts (see `note_templates.py`).
 ## Ask, search, and MCP
 
 - **Ask** — chat with your whole library using a local model through Ollama
-  (`ask_model` in `data/settings.json`; `hermes3:8b` works best because it
-  searches on its own initiative). Answers cite the meeting and timestamp, and
-  the first search is auto-seeded so replies stay grounded.
+  (`ask_model` in `data/settings.json`). Answers cite the meeting and
+  timestamp, and the first search is auto-seeded so replies stay grounded.
+  `gemma4:12b` is the default: scored against hermes3:8b on a graded question
+  set it reached 90% versus 70% overall, and cited a real source in 6 of 7
+  answers against hermes3's 0 of 7. It is slower — about 19 s an answer — and
+  that is the trade worth making. `ask_reliability.py` and
+  `retrieval_check.py` re-run those scores.
 - **Search** — full-text across every transcript, note, and title (SQLite FTS5).
 - **MCP server** (`mcp_server.py`) — lets Claude Code or Claude Desktop on the
   same Mac list, search, and read your meetings, for synthesis work that a
@@ -125,20 +135,46 @@ rather than risking a wrong name.
 - `pipeline.py` — audio → whisper → diarization → voiceprints → templated note.
 - `calendar_ics.py`, `gcal_writeback.py` — calendar reading and debriefs.
 - `gdoc_export.py`, `obsidian_export.py` — exports.
+- `worker.py` — one subprocess per meeting; also merges the day's parts.
+- `watchdog.py` — health checks, self-repair, macOS notifications.
 - `ask.py`, `search_index.py`, `mcp_server.py` — library intelligence.
+- `ask_reliability.py`, `retrieval_check.py`, `note_quality.py` — scoring
+  harnesses. Quality claims in this README come from these, not from
+  impressions.
 - `static/` — the single-page UI.
 - `data/meetings/<id>/` — audio, transcript, note, agenda. Deleted and merged
   meetings move to `data/trash/`.
 - `version.py` and `CHANGELOG.md` — release tracking.
 
+## Staying alive
+
+Two failures matter more than any feature here: a recording that transcribes
+and silently produces no note, and a server that is quietly not running. Both
+happened, and neither surfaced until something unrelated exposed them.
+
+- `/api/health` reports what must be true for Baruch to work — Ollama
+  answering, whisper-cli present, disk space, meetings stuck mid-processing.
+- `watchdog.py` runs every 5 minutes from its own LaunchAgent. It restarts
+  Ollama, restarts the server, bootstraps the LaunchAgent back if it has been
+  unloaded, and restarts a stalled worker. Anything it cannot fix becomes a
+  macOS notification, because the browser tab is closed exactly when you are
+  in the meeting being recorded.
+- Processing runs in a subprocess (`worker.py`), so a long transcription can
+  never make the UI unresponsive, and a worker survives a server restart.
+
 ## Known limits
 
-- **Processing runs inside the web server**, so the UI can become unresponsive
-  while a long recording is being transcribed. Moving the pipeline to
-  subprocess workers is the next planned change and the highest-value one.
 - Only daily and weekly calendar recurrences are handled; monthly and yearly
   events are skipped rather than guessed at.
-- Note quality is bounded by the local model. A 7B model writes accurate but
-  plainer prose than a cloud model would.
+- **Note quality is bounded by what a local model can do in reasonable time.**
+  Notes use `qwen2.5:7b-instruct` (~5 min for a 3-hour class). gemma4:12b was
+  scored against it and writes a fuller note — 40% transcript-vocabulary
+  coverage against 24% — but took 43 minutes on one class and 10 hours on
+  another, so it is not usable here. `note_model` in settings changes this if
+  better hardware or a better small model appears. `note_quality.py` re-runs
+  the comparison.
+- Transcription runs at roughly 0.7–1× real time with whisper large-v3, so a
+  3-hour class takes a couple of hours to process. It runs unattended after
+  the meeting, so this has not been a practical problem.
 
 Requires macOS 13+ on Apple Silicon. See `CHANGELOG.md` for release history.

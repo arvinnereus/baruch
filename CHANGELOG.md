@@ -4,6 +4,17 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows beside the
 app name in the sidebar; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## 1.7.2 — 2026-08-15
+
+### Fixed
+- **README brought back in line with the code.** It still listed in-server
+  processing as a known limit and called subprocess workers "the next planned
+  change" — three days after they shipped — and still recommended hermes3:8b
+  for Ask. A README that describes a version that no longer exists is worse
+  than a short one, and this is the file strangers read first. Auto-merge, the
+  health watchdog, the scoring harnesses and the note-model finding are now
+  documented; the stale claims are gone.
+
 ## Benchmark result — notes stay on qwen2.5:7b-instruct (2026-08-15)
 
 Scored on the two longest classes (192 min / 153 min, lecture template):
