@@ -10,5 +10,5 @@ code on disk, so a bump is what makes the Update banner truthful.
 """
 
 VERSION = "1.7.3"
-RELEASED = "2026-08-13"
+RELEASED = "2026-08-20"
 CODENAME = "Caleb"  # the machine this release was built and proven on
