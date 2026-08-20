@@ -135,6 +135,51 @@ def auto_merge(d: Path, meta: dict):
         LOCK.unlink(missing_ok=True)
 
 
+def _merged_without_raw(d: Path, meta: dict) -> bool:
+    """A merged meeting holds one combined meeting.wav and no raw track files.
+
+    Re-running the raw pipeline on it finds no tracks, errors, and stamps
+    "error" on a complete record — which is exactly what happened to the
+    17 Aug class when a server restart triggered recovery on it."""
+    if not meta.get("merged_from"):
+        return False
+    raw = list(d.glob("mic-*.caf")) + list(d.glob("system-*.caf")) + \
+        list(d.glob("mic*.raw")) + list(d.glob("upload.*"))
+    return not raw
+
+
+def _finish_merged(d: Path, f: Path, meta: dict) -> int:
+    """Recover a merged meeting without touching its audio: it is already
+    transcribed, so at worst it needs its note regenerating."""
+    if not (d / "transcript.json").exists():
+        _patch(f, status="error", worker_pid=None,
+               error="merged meeting has no transcript")
+        return 1
+    if (d / "note.json").exists():
+        print("merged meeting already complete — marking ready")
+        _patch(f, status="ready", worker_pid=None)
+        return 0
+    print("merged meeting needs only its note regenerating")
+    segs = json.loads((d / "transcript.json").read_text(encoding="utf-8"))
+    if isinstance(segs, dict):
+        segs = segs.get("segments", segs.get("lines", []))
+    note = pipeline.generate_note(segs, meta.get("context", ""), d,
+                                  meta.get("template_id", "general"))
+    if note.get("error"):
+        _patch(f, status="error", worker_pid=None, error=note["error"])
+        return 1
+    (d / "note.json").write_text(json.dumps(note), encoding="utf-8")
+    (d / "note.md").write_text(
+        pipeline.note_markdown(meta.get("title", "Meeting"), note),
+        encoding="utf-8")
+    _patch(f, status="ready", worker_pid=None)
+    try:
+        pipeline.finish_extras(json.loads(f.read_text(encoding="utf-8")), d, note)
+    except Exception as e:
+        print(f"exports skipped: {e}")
+    return 0
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print("usage: worker.py <meeting_dir>", file=sys.stderr)
@@ -149,6 +194,9 @@ def main() -> int:
     # from "died in a restart", so it must be written by the worker itself
     _patch(f, worker_pid=os.getpid())
     try:
+        meta = json.loads(f.read_text(encoding="utf-8"))
+        if _merged_without_raw(d, meta):
+            return _finish_merged(d, f, meta)
         pipeline.process_meeting(d)
         _patch(f, worker_pid=None)
         meta = json.loads(f.read_text(encoding="utf-8"))

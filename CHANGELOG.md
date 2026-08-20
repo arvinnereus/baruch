@@ -4,6 +4,21 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows beside the
 app name in the sidebar; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## 1.7.3 — 2026-08-20
+
+### Fixed
+- **Recovery destroyed merged meetings.** A merged record holds one combined
+  `meeting.wav` and no raw track files, so when a server restart triggered
+  recovery on one, the raw pipeline found no tracks, failed, and stamped
+  `error` on a complete record. The 17 Aug class — 134 minutes, fully
+  transcribed, note written, calendar debrief done — was marked failed two
+  days after it succeeded, which is why that day appeared unconsolidated.
+  Every recovery path funnels through `worker.py`, so the guard lives there: a
+  merged meeting is never re-run through the raw pipeline. If it already has a
+  transcript and note it is simply marked ready; if only the note is missing,
+  the note alone is regenerated. Verified by reproducing the exact failure and
+  watching it repair the record instead of breaking it.
+
 ## 1.7.2 — 2026-08-15
 
 ### Fixed
