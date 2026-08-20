@@ -905,6 +905,40 @@ def export_gdoc(mid: str):
     return {"ok": True, "path": str(path), "folder": str(path.parent)}
 
 
+@app.post("/api/meetings/{mid}/consolidate_speakers")
+def consolidate_speakers(mid: str):
+    """Merge diarized clusters that are the same voice.
+
+    A long lecture is essentially one speaker, but diarization splits it into
+    dozens of "Speaker N" labels — and merging two parts doubles them again,
+    because each part was diarized separately. Renaming them one by one is the
+    single most tedious thing in the app."""
+    d = mdir(mid)
+    f = d / "transcript.json"
+    if not f.exists():
+        return JSONResponse({"error": "no transcript yet"}, status_code=400)
+    segs = json.loads(f.read_text(encoding="utf-8"))
+    if isinstance(segs, dict):
+        segs = segs.get("segments", segs.get("lines", []))
+    before = len({s.get("speaker") for s in segs})
+    import voiceprints
+    mapping = voiceprints.consolidate_speakers(d, segs,
+                                               log=lambda _d, m: pipeline.log(d, m))
+    if not mapping:
+        return {"ok": True, "merged": 0, "speakers": before,
+                "message": "no duplicate voices found"}
+    f.write_text(json.dumps(segs), encoding="utf-8")
+    after = sorted({s.get("speaker") for s in segs})
+    add_people([n for n in after if not n.startswith("Speaker ")])
+    try:
+        import search_index
+        search_index.refresh()
+    except Exception:
+        pass
+    return {"ok": True, "merged": len(mapping), "speakers": len(after),
+            "was": before, "names": after[:12]}
+
+
 @app.get("/api/meetings/{mid}/audio")
 def audio(mid: str):
     f = mdir(mid) / "meeting.wav"

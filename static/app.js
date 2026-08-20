@@ -408,6 +408,23 @@ for (const id of ["ag-talking", "ag-actions", "ag-notepad"]) {
         notepad: $("#ag-notepad").value }) }), 600);
   };
 }
+$("#merge-speakers").onclick = busy($("#merge-speakers"), async () => {
+  // Diarization splits one lecturer into dozens of "Speaker N" labels, and a
+  // merged day doubles them again. Renaming each by hand was the single most
+  // tedious thing in the app.
+  const r = await api(`/meetings/${current}/consolidate_speakers`,
+                      { method: "POST" });
+  if (!r.merged) {
+    await modal({ title: "Nothing to combine",
+                  text: "No two speaker labels matched the same voice." });
+    return;
+  }
+  await modal({ title: "Speakers combined",
+    text: `${r.was} speaker labels became ${r.speakers}. Rename the remaining `
+        + `one${r.speakers > 1 ? "s" : ""} once and it applies to the whole transcript.` });
+  await openMeeting(current);
+});
+
 $("#t-search").oninput = renderTranscript;
 
 /* ---------- tabs ---------- */

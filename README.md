@@ -54,6 +54,12 @@ Recordings can also be started from the menu bar or from a calendar event.
   `"auto_merge": false`; several recordings can still be merged by hand.
 - **Names the speakers it knows.** Voiceprints are learned from any rename, so
   people you name once are recognized in every later recording.
+- **Combines a voice that was split up.** Diarization splits one lecturer into
+  dozens of "Speaker N" labels over a long recording; clusters that are the
+  same voice are merged automatically before naming, so a lecture ends up as
+  one speaker instead of forty. Named speakers are never absorbed, so genuine
+  Q&A voices survive. The Transcript tab has a **Combine same voices** button
+  for older meetings.
 - **Exports the note** as a formatted `.docx` to `My Drive/Baruch/` (opens
   directly in Google Docs) and as Markdown into an Obsidian vault.
 - **Writes a debrief back onto the calendar event** — summary, action items,

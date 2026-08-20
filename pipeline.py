@@ -547,6 +547,16 @@ def process_meeting(mdir: Path):
                           f"{n_speakers} speakers")
                 if n_speakers > 1:
                     diarize.assign_speakers(track_segs, diar, label)
+                    # Diarization over-splits one voice over a long recording:
+                    # a 2 h lecture came back as 39 speakers. Merge clusters
+                    # that are the same voice BEFORE identification, so the
+                    # voiceprint match sees one big cluster instead of
+                    # fragments and names it once.
+                    try:
+                        voiceprints.consolidate_speakers(mdir, track_segs,
+                                                         log=log)
+                    except Exception as e:
+                        log(mdir, f"speaker consolidation skipped: {e}")
             details = {}
             try:
                 hits, details = voiceprints.identify(

@@ -264,3 +264,99 @@ def identify(wav16: Path, segs: list[dict], log=None):
                     log(f"absorbed {len(absorbed)} fragment clusters into "
                         f"{dominant} (dominant-speaker rule)")
     return renamed, details
+
+
+# --- speaker consolidation -------------------------------------------------
+# Diarization over-splits a single voice across a long recording, and merging
+# two parts doubles the labels because each part was diarized independently.
+# A 2 h 14 m lecture with essentially one speaker came out as 39 speakers, and
+# a 2 h 42 m one left 40+ slivers beside a correctly-named 92% speaker. Both
+# meant renaming by hand, repeatedly.
+MERGE_THRESHOLD = 0.58   # looser than identification (0.70): the question is
+                         # "same voice as that cluster", not "is this the
+                         # enrolled person", and the cost of a wrong merge is
+                         # far lower than 39 labels for one lecturer
+DOMINANT_SHARE = 0.55    # one voice holding this much of the speech means a
+                         # lecture, not a discussion
+SLIVER_SHARE = 0.02      # clusters this small beside a dominant voice are
+SLIVER_SECS = 90         # fragmentation, not participants
+
+
+def _label_seconds(segs: list[dict]) -> dict:
+    out: dict[str, float] = {}
+    for s in segs:
+        sp = s.get("speaker", "")
+        out[sp] = out.get(sp, 0.0) + max(0, (s.get("end_ms", 0) -
+                                             s.get("start_ms", 0))) / 1000
+    return out
+
+
+def consolidate_speakers(mdir: Path, segs: list[dict], log=None) -> dict:
+    """Merge diarized clusters that are the same voice, then absorb leftover
+    slivers into the dominant speaker. Mutates `segs`; returns {old: new}.
+
+    Named speakers are never absorbed or merged away — a real Q&A voice that
+    has been identified must survive, and only unnamed "Speaker N" clusters
+    are candidates."""
+    def _log(m):
+        if log:
+            log(mdir, f"consolidate: {m}")
+
+    secs = _label_seconds(segs)
+    unnamed = [l for l in secs if l.startswith("Speaker ") or l == "Others"]
+    if len(unnamed) < 2:
+        return {}
+
+    mapping: dict[str, str] = {}
+    wav16 = _meeting_wav16(mdir)
+    if wav16 and EMB_MODEL.exists():
+        try:
+            wav = _read_wav16(wav16)
+            cent = {}
+            for lab in unnamed:
+                samples = _speaker_samples(wav16, segs, lab)
+                if not samples:
+                    continue
+                vecs = [_embed(s) for s in samples[:6]]
+                if vecs:
+                    cent[lab] = np.mean(np.array(vecs), axis=0)
+            # agglomerative: biggest cluster absorbs whoever matches it
+            order = sorted(cent, key=lambda l: -secs.get(l, 0))
+            for i, keep in enumerate(order):
+                if mapping.get(keep):
+                    continue
+                for other in order[i + 1:]:
+                    if other in mapping or other == keep:
+                        continue
+                    if _cos(cent[keep], cent[other]) >= MERGE_THRESHOLD:
+                        mapping[other] = keep
+            if mapping:
+                _log(f"voice-matched {len(mapping)} cluster(s) into "
+                     f"{len(set(mapping.values()))}")
+        except Exception as e:
+            _log(f"voice matching skipped: {e}")
+
+    # apply, then absorb slivers under a dominant voice
+    for s in segs:
+        sp = s.get("speaker", "")
+        if sp in mapping:
+            s["speaker"] = mapping[sp]
+
+    secs = _label_seconds(segs)
+    total = sum(secs.values()) or 1
+    top = max(secs, key=lambda l: secs[l])
+    if secs[top] / total >= DOMINANT_SHARE:
+        absorbed = 0
+        for lab, sec in list(secs.items()):
+            if lab == top or not (lab.startswith("Speaker ") or lab == "Others"):
+                continue
+            if sec / total < SLIVER_SHARE and sec < SLIVER_SECS:
+                for s in segs:
+                    if s.get("speaker") == lab:
+                        s["speaker"] = top
+                mapping[lab] = top
+                absorbed += 1
+        if absorbed:
+            _log(f"absorbed {absorbed} sliver(s) into {top} "
+                 f"({100*secs[top]/total:.0f}% of speech)")
+    return mapping

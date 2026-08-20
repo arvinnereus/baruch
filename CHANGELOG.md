@@ -4,6 +4,29 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows beside the
 app name in the sidebar; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## 1.8.0 — 2026-08-20
+
+### Added
+- **Speaker consolidation — a lecture is one speaker, not forty.** Diarization
+  over-splits a single voice across a long recording, and merging a day's
+  parts doubles the labels again because each part was diarized separately. A
+  2 h 14 m class came out as **40 speakers** for one lecturer; another left
+  **44** beside a correctly-named 92% speaker. Renaming them by hand was the
+  most tedious thing in the app.
+  Clusters whose voice centroids match are merged (cosine 0.58 — looser than
+  the 0.70 identification threshold, because the question is "same voice as
+  that cluster", not "is this the enrolled person"), then leftover slivers are
+  absorbed into a dominant voice holding 55%+ of the speech. **Named speakers
+  are never merged away or absorbed**, so a real Q&A participant survives.
+  - Runs automatically after diarization and **before** voiceprint
+    identification, which matters: on the 17 Aug class the fragments were each
+    too short to match, but the consolidated cluster matched Rev Lynette at
+    0.71 and was named with no renaming at all.
+  - **Combine same voices** button on the Transcript tab applies it to any
+    existing meeting.
+  Measured on real classes: 40 → 1 speaker, and 44 → 4 (the lecturer, a named
+  guest, and two genuine unnamed voices left intact).
+
 ## 1.7.3 — 2026-08-20
 
 ### Fixed
