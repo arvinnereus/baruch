@@ -20,6 +20,17 @@ let engine = AVAudioEngine()
 do {
     // must be enabled before formats are queried
     try engine.inputNode.setVoiceProcessingEnabled(true)
+    // Voice processing makes macOS duck ALL other output, the same way a phone
+    // call does — so during a recording the speakers went quiet even at full
+    // volume, which is miserable when you are recording a call you also need
+    // to hear. Ask for the minimum ducking: echo cancellation still works
+    // (it uses the output as its reference), it just stops turning it down.
+    if #available(macOS 14.0, *) {
+        engine.inputNode.voiceProcessingOtherAudioDuckingConfiguration =
+            AVAudioVoiceProcessingOtherAudioDuckingConfiguration(
+                enableAdvancedDucking: false,
+                duckingLevel: .min)
+    }
 } catch {
     FileHandle.standardError.write("voice processing unavailable: \(error)\n".data(using: .utf8)!)
     exit(3)

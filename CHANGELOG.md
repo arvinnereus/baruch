@@ -4,6 +4,30 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows beside the
 app name in the sidebar; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## 1.8.1 — 2026-08-21
+
+### Fixed
+- **Recording no longer makes the speakers go quiet.** Echo cancellation runs
+  on a macOS voice-processing unit, and that unit ducks all other output the
+  way a phone call does — so while recording an online meeting, the meeting
+  itself became almost inaudible even at full volume. Reported as "the speaker
+  sound seems softer even at max".
+  Measured on the system-audio tap, peak level while a sound played:
+
+  | | level |
+  |---|---|
+  | not recording | −12.8 dB |
+  | recording, before this fix | −42.8 dB |
+  | recording, after | −20.8 dB |
+
+  **30 dB of ducking cut to 8 dB.** The unit is now asked for minimum ducking
+  (`voiceProcessingOtherAudioDuckingConfiguration`, macOS 14+); echo
+  cancellation still works, since it uses the output as its reference rather
+  than needing it quiet. The residual 8 dB is the unit's own behaviour and
+  cannot be removed without giving up echo cancellation entirely.
+  Only affects **Online (system + mic)** mode — in-person recording never used
+  voice processing and never ducked.
+
 ## 1.8.0 — 2026-08-20
 
 ### Added
