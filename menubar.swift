@@ -6,7 +6,7 @@
 import AppKit
 import Foundation
 
-let BASE = "http://127.0.0.1:8377"
+let BASE = "http://127.0.0.1:8946"
 
 func api(_ path: String, method: String = "GET", body: [String: Any]? = nil,
          done: @escaping (Any?) -> Void) {

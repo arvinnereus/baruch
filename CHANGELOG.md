@@ -4,6 +4,17 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows beside the
 app name in the sidebar; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## 1.8.2 — 2026-08-31
+
+### Changed
+- **Default port moved from 8377 to 8946.** A leftover `python -m http.server`
+  from an unrelated project (Second Peter, running its own `login.html`) had
+  squatted on 8377, and Chrome's address-bar autocomplete kept resurrecting
+  that dead `/login.html` URL every time 8377 was typed, no matter how many
+  times the actual server was fixed. Moving off the contested port was more
+  reliable than fighting browser autocomplete. Override with `PORT=xxxx
+  ./run.sh` if 8946 ever collides with something else.
+
 ## 1.8.1 — 2026-08-21
 
 ### Fixed

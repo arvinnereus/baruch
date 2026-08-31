@@ -124,7 +124,7 @@ def auto_merge(d: Path, meta: dict):
         ids = [i for i, _ in ready] + [me_id]
         print(f"auto-merge: combining {len(ids)} parts -> {ids}")
         req = urllib.request.Request(
-            "http://127.0.0.1:8377/api/merge",
+            "http://127.0.0.1:8946/api/merge",
             data=json.dumps({"meeting_ids": ids}).encode(),
             headers={"Content-Type": "application/json"}, method="POST")
         with urllib.request.urlopen(req, timeout=3600) as r:

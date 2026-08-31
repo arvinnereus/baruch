@@ -29,7 +29,7 @@ APP_DIR = Path(__file__).resolve().parent
 DATA = APP_DIR / "data" / "meetings"
 STATE = APP_DIR / "data" / "watchdog_state.json"
 LOG = APP_DIR / "data" / "watchdog.log"
-BASE = "http://127.0.0.1:8377"
+BASE = "http://127.0.0.1:8946"
 AGENT = "io.localfellow.server"   # bundle id predates the rename; see CHANGELOG
 REPEAT_AFTER_S = 6 * 3600         # re-notify about an unfixed fault twice a day
 

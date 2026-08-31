@@ -63,7 +63,7 @@ else
   echo "⚠️  ollama not installed — transcripts will work, AI notes won't."
 fi
 
-PORT="${PORT:-8377}"
+PORT="${PORT:-8946}"
 echo "Baruch → http://127.0.0.1:$PORT"
 (sleep 1.2 && open "http://127.0.0.1:$PORT") &
 # NOT .venv/bin/uvicorn: console-script shebangs bake in the absolute

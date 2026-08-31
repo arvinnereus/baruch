@@ -16,7 +16,7 @@ every word from dictation.*
 brew install whisper-cpp ffmpeg ollama
 ollama pull qwen2.5:7b-instruct   # writes the notes
 ollama pull gemma4:12b            # answers Ask (see "Ask, search, and MCP")
-./run.sh                          # opens http://127.0.0.1:8377
+./run.sh                          # opens http://127.0.0.1:8946
 ```
 
 First run downloads the whisper and speaker models (~1.7 GB, once), builds the
