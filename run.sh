@@ -64,9 +64,13 @@ else
 fi
 
 PORT="${PORT:-8946}"
+# HOST=0.0.0.0 exposes Baruch on the LAN so Baruch Lite on Esther can
+# upload directly. Default stays loopback-only.
+HOST="${HOST:-127.0.0.1}"
 echo "Baruch → http://127.0.0.1:$PORT"
+[ "$HOST" != "127.0.0.1" ] && echo "  LAN → http://$(ipconfig getifaddr en0 2>/dev/null || echo "$HOST"):$PORT"
 (sleep 1.2 && open "http://127.0.0.1:$PORT") &
 # NOT .venv/bin/uvicorn: console-script shebangs bake in the absolute
 # path the venv was created at, and the app has moved since. Invoking
 # through the python symlink survives any future relocation.
-exec .venv/bin/python -m uvicorn server:app --host 127.0.0.1 --port "$PORT"
+exec .venv/bin/python -m uvicorn server:app --host "$HOST" --port "$PORT"
