@@ -4,6 +4,14 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows beside the
 app name in the sidebar; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## 1.9.1 — 2026-09-03
+
+### Fixed
+- The meetings list no longer returns 500 when one `meeting.json` is being
+  rewritten at the moment of the poll (seen right after the 1.9.0 restart,
+  while auto-merge was consolidating the morning's class). The half-written
+  file is skipped for that one poll instead.
+
 ## 1.9.0 — 2026-09-03
 
 ### Added

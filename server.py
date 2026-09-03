@@ -500,8 +500,14 @@ def list_meetings():
     out = []
     for d in DATA.iterdir():
         f = d / "meeting.json"
-        if f.exists():
+        if not f.exists():
+            continue
+        try:
             out.append(json.loads(f.read_text(encoding="utf-8")))
+        except ValueError:
+            # a merge or worker is mid-write on this file; the sidebar polls
+            # every few seconds, so skipping it once beats a 500 for the lot
+            continue
     out.sort(key=lambda m: m.get("created_at", 0), reverse=True)
     return out
 
