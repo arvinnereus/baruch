@@ -167,6 +167,12 @@ happened, and neither surfaced until something unrelated exposed them.
   in the meeting being recorded.
 - Processing runs in a subprocess (`worker.py`), so a long transcription can
   never make the UI unresponsive, and a worker survives a server restart.
+- **Other devices need a token.** Baruch Lite on the phone uploads straight
+  into the API, which means Baruch is bound to `0.0.0.0`. Anything that is not
+  Caleb itself must send `X-Baruch-Token` (from `data/api_token`, generated
+  on first start); the UI, menubar, MCP server and watchdog on Caleb stay
+  open. Use Caleb's Tailscale address in Baruch Lite, not the LAN IP — the
+  LAN IP changes and every change silently broke uploads.
 
 ## Known limits
 

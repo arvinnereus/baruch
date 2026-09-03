@@ -18,6 +18,12 @@ OLLAMA = "http://127.0.0.1:11434"
 LLM_PREFERRED = ["qwen2.5:7b-instruct", "qwen2.5:7b", "qwen2.5:1.5b"]
 
 
+class TooShort(RuntimeError):
+    """Almost no speech was transcribed. Not a failure of the pipeline — a
+    24-second call simply has nothing to write a note about — so it gets its
+    own status instead of the red "error" that reads like an outage."""
+
+
 def whisper_model() -> Path:
     """Prefer full large-v3 (best accuracy on hard/far-field audio) over turbo."""
     for name in ("ggml-large-v3.bin", "ggml-large-v3-turbo.bin"):
@@ -589,9 +595,9 @@ def process_meeting(mdir: Path):
         # exported to Drive/Obsidian/calendar). Fail loudly instead.
         total_chars = sum(len(s["text"]) for s in segs)
         if total_chars < 200:
-            raise RuntimeError(
-                f"transcription produced almost no text ({total_chars} chars) "
-                f"— audio conversion or capture problem; note NOT generated")
+            raise TooShort(
+                f"almost no speech transcribed ({total_chars} chars) — the "
+                f"call was too short, or the audio is silent; no note written")
         segs.sort(key=lambda s: s["start_ms"])
         # unnamed clusters from different tracks must not share a label
         remap, counter = {}, 0
@@ -619,6 +625,10 @@ def process_meeting(mdir: Path):
         meta["status"] = "ready" if not note.get("error") else "ready_no_note"
         if meta["status"] == "ready":
             finish_extras(meta, mdir, note)
+    except TooShort as e:
+        log(mdir, f"TOO SHORT: {e}")
+        meta["status"] = "too_short"
+        meta["error"] = str(e)
     except Exception as e:
         log(mdir, f"ERROR: {e}")
         meta["status"] = "error"

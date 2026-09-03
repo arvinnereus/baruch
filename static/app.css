@@ -33,7 +33,7 @@ body { font: 15px/1.55 -apple-system, "SF Pro Text", Helvetica, sans-serif;
 .mcard .s { color: var(--muted); font-size: 12.5px; display: flex; gap: 8px; }
 .badge { font-size: 12px; padding: 1px 8px; border-radius: 20px; background: var(--chip); }
 .badge.ready { color: var(--ok); } .badge.recording, .badge.paused { color: var(--rec); }
-.badge.processing, .badge.noting { color: var(--warn); } .badge.error { color: var(--rec); }
+.badge.processing, .badge.noting, .badge.too_short { color: var(--warn); } .badge.error { color: var(--rec); }
 .side-foot { padding: 12px; border-top: 1px solid var(--line); }
 .upload-label { color: var(--muted); cursor: pointer; font-size: 13px;
   display: flex; align-items: center; gap: 6px; }

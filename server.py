@@ -2,6 +2,7 @@
 Run via ./run.sh (creates venv with fastapi/uvicorn)."""
 import json
 import re
+import secrets
 import subprocess
 import sys
 import threading
@@ -23,6 +24,21 @@ APP_DIR = Path(__file__).resolve().parent
 DATA = APP_DIR / "data" / "meetings"
 DATA.mkdir(parents=True, exist_ok=True)
 SETTINGS_FILE = APP_DIR / "data" / "settings.json"
+TOKEN_FILE = APP_DIR / "data" / "api_token"
+
+
+def _api_token() -> str:
+    """Shared secret for API calls that don't come from Caleb itself (Baruch
+    Lite on Esther). Generated once into data/, never sent anywhere by the
+    server: the phone gets it by Arvin pasting it into Baruch Lite's settings.
+    Rotate by deleting the file and restarting."""
+    if not TOKEN_FILE.exists():
+        TOKEN_FILE.write_text(secrets.token_urlsafe(24), encoding="utf-8")
+        TOKEN_FILE.chmod(0o600)
+    return TOKEN_FILE.read_text(encoding="utf-8").strip()
+
+
+API_TOKEN = _api_token()
 
 app = FastAPI(title="Baruch")
 
@@ -45,6 +61,30 @@ async def no_cache_static(request, call_next):
     if not request.url.path.startswith("/api"):
         resp.headers["Cache-Control"] = "no-cache"
     return resp
+
+
+def _is_loopback(host: str | None) -> bool:
+    return host is not None and (host.startswith("127.") or host == "::1")
+
+
+@app.middleware("http")
+async def require_token_off_loopback(request, call_next):
+    """Binding to 0.0.0.0 (so Baruch Lite can upload) exposed every endpoint
+    — create, delete, transcripts — to anything on the same Wi-Fi or tailnet.
+    Requests from Caleb itself (the UI, menubar, MCP, watchdog) stay open;
+    anything else must present the token from data/api_token."""
+    if request.url.path.startswith("/api") and \
+            not _is_loopback(request.client.host if request.client else None):
+        sent = request.headers.get("x-baruch-token", "")
+        if not sent:
+            auth = request.headers.get("authorization", "")
+            if auth.lower().startswith("bearer "):
+                sent = auth[7:].strip()
+        if not (sent and secrets.compare_digest(sent, API_TOKEN)):
+            return JSONResponse(
+                {"error": "API token required — on Caleb: cat data/api_token"},
+                status_code=401)
+    return await call_next(request)
 
 
 def spawn_worker(d: Path):

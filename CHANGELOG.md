@@ -4,6 +4,27 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows beside the
 app name in the sidebar; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## 1.9.0 — 2026-09-03
+
+### Added
+- **API token for other devices.** Binding to `0.0.0.0` for Baruch Lite had
+  left every endpoint — create, delete, transcripts — open to anything on the
+  same Wi-Fi. Requests that don't come from Caleb itself must now carry the
+  token in `X-Baruch-Token` (or `Authorization: Bearer`). It is generated once
+  into `data/api_token` and pasted into Baruch Lite's settings; the UI,
+  menubar, MCP server and watchdog on Caleb are unaffected. Rotate by deleting
+  the file and restarting.
+- **"too short" status.** A call under a few seconds of speech used to end up
+  as a red `error` with a scary "capture problem" message. It now lands as
+  `too short`, with its audio playable, and no longer looks like an outage.
+  Baruch Lite skips such calls (and Samsung's "Suspected Spam" calls) before
+  upload, so this mostly matters for manual uploads.
+
+### Changed
+- `run.sh` prints the Tailscale address and where the token lives when bound
+  off loopback. Caleb's Tailscale IP is the address Baruch Lite should use —
+  the LAN IP changed three times in two days and silently broke uploads.
+
 ## 1.8.2 — 2026-08-31
 
 ### Changed

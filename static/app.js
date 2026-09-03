@@ -88,7 +88,7 @@ async function refreshList() {
 }
 const label = (s) => ({ idle: "new", recording: "REC", paused: "paused",
   processing: "transcribing", noting: "writing note", ready: "recap ready",
-  ready_no_note: "transcript ready", error: "error" }[s] || s);
+  ready_no_note: "transcript ready", too_short: "too short", error: "error" }[s] || s);
 
 /* ---------- meeting detail ---------- */
 async function openMeeting(id) {
@@ -128,12 +128,13 @@ function renderDetail() {
   $("#rec-tracks").textContent = (m.tracks || []).join(" + ");
 
   const busy = m.status === "processing" || m.status === "noting";
-  $("#proc-banner").hidden = !busy && m.status !== "error";
+  $("#proc-banner").hidden = !busy && m.status !== "error" && m.status !== "too_short";
   if (busy) $("#proc-banner").textContent =
     m.status === "processing" ? "⏳ Transcribing…" : "✍️ Writing AI note…";
   if (m.status === "error") $("#proc-banner").textContent = "⚠️ " + (m.error || "error");
+  if (m.status === "too_short") $("#proc-banner").textContent = "⏱ " + (m.error || "too short for a note");
 
-  const hasAudio = ["ready", "ready_no_note", "noting"].includes(m.status) &&
+  const hasAudio = ["ready", "ready_no_note", "noting", "too_short"].includes(m.status) &&
     !m.audio_purged;
   $("#player").hidden = !hasAudio;
   if (hasAudio) $("#player").src = `/api/meetings/${m.id}/audio`;

@@ -68,7 +68,12 @@ PORT="${PORT:-8946}"
 # upload directly. Default stays loopback-only.
 HOST="${HOST:-127.0.0.1}"
 echo "Baruch → http://127.0.0.1:$PORT"
-[ "$HOST" != "127.0.0.1" ] && echo "  LAN → http://$(ipconfig getifaddr en0 2>/dev/null || echo "$HOST"):$PORT"
+if [ "$HOST" != "127.0.0.1" ]; then
+  echo "  LAN → http://$(ipconfig getifaddr en0 2>/dev/null || echo "$HOST"):$PORT"
+  TS_IP="$(/usr/local/bin/tailscale ip -4 2>/dev/null | head -1)"
+  [ -n "$TS_IP" ] && echo "  Tailscale → http://$TS_IP:$PORT  (stable address for Baruch Lite)"
+  echo "  Other devices need the API token: cat data/api_token"
+fi
 (sleep 1.2 && open "http://127.0.0.1:$PORT") &
 # NOT .venv/bin/uvicorn: console-script shebangs bake in the absolute
 # path the venv was created at, and the app has moved since. Invoking
