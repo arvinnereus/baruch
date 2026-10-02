@@ -9,6 +9,6 @@ The self-update system compares this string between the running server and the
 code on disk, so a bump is what makes the Update banner truthful.
 """
 
-VERSION = "1.9.1"
-RELEASED = "2026-09-03"
+VERSION = "1.9.2"
+RELEASED = "2026-10-02"
 CODENAME = "Caleb"  # the machine this release was built and proven on

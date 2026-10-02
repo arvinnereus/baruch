@@ -41,9 +41,10 @@ guard fmt.sampleRate > 0 else {
     FileHandle.standardError.write("no input format — mic permission?\n".data(using: .utf8)!)
     exit(3)
 }
-// The VP unit outputs multi-channel (voice + reference channels). Write ONLY
-// channel 0 (the processed voice) as mono — 9× smaller files and directly
-// convertible by ffmpeg (auto-downmix chokes on the 9-channel layout).
+// Install the tap using the target mono-float32 format so AVAudioEngine
+// handles channel extraction / downmix internally. This avoids the fragile
+// per-channel pointer dance that silently breaks when the VP unit delivers
+// buffers in a non-float32 layout (seen on macOS 16 / Darwin 27+).
 guard let monoFmt = AVAudioFormat(commonFormat: .pcmFormatFloat32,
                                   sampleRate: fmt.sampleRate, channels: 1,
                                   interleaved: false) else { exit(3) }
@@ -56,14 +57,12 @@ do {
     exit(3)
 }
 
-engine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: fmt) { buf, _ in
-    guard let src = buf.floatChannelData,
-          let mono = AVAudioPCMBuffer(pcmFormat: monoFmt,
-                                      frameCapacity: buf.frameLength)
-    else { return }
-    mono.frameLength = buf.frameLength
-    mono.floatChannelData![0].update(from: src[0], count: Int(buf.frameLength))
-    try? file?.write(from: mono)
+engine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: monoFmt) { buf, _ in
+    do {
+        try file?.write(from: buf)
+    } catch {
+        FileHandle.standardError.write("write error: \(error)\n".data(using: .utf8)!)
+    }
 }
 
 func finish(_ code: Int32) {

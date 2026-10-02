@@ -4,6 +4,33 @@ Versions follow `MAJOR.MINOR.PATCH`. The installed version shows beside the
 app name in the sidebar; the Update banner names the version it is offering. Bump `version.py`
 in the same commit as the change.
 
+## 1.9.2 — 2026-10-02
+
+### Fixed
+- **Silent recording on macOS 16 (Darwin 27).** `voicemic` was manually copying
+  channel 0 from the raw multi-channel AVAudioEngine buffer. The voice-processing
+  unit on macOS 16 delivers buffers in a layout that broke that pointer arithmetic
+  silently — the file was written but contained no audio. The tap is now installed
+  with the target mono-float32 format directly so AVAudioEngine handles downmixing
+  internally. No more silent captures.
+- **"Too short" false positives.** The WAV validity check in `pipeline.py` was
+  `> 44 bytes` (just enough for a header), which accepted files ffmpeg had written
+  a header into but no audio data. Raised to `> 4096 bytes` so empty-audio files
+  are caught and retried via the multi-channel extraction path.
+- **Speech gated as silence at low mic levels.** The silence-drop threshold was
+  `-48 dB`. Laptop mics placed further from speakers, and audio slightly ducked by
+  the voice-processing unit, were coming in at `-50` to `-55 dB` and getting
+  discarded as silent segments — causing meetings to be marked "too short" even
+  when speech was clearly present. Threshold lowered to `-58 dB`.
+
+### Changed
+- **Liquid glass UI.** All panels, cards, buttons, banners, and the floating
+  recording pill are now frosted glass: semi-transparent (~40 % opacity) over a
+  vivid five-layer radial gradient, `backdrop-filter: blur(40px) saturate(200%)`,
+  triple-edge specular highlight, and per-state coloured glows (record → red,
+  accent hover → blue). Replaces the flat opaque dark theme. CSS variable set
+  renamed from `--panel` / `--line` to `--glass-*` tokens.
+
 ## 1.9.1 — 2026-09-03
 
 ### Fixed

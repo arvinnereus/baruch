@@ -46,11 +46,11 @@ def run(cmd, **kw):
 def to_wav(src: Path, dst: Path, rate: int = 48000):
     run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", str(src),
          "-ar", str(rate), "-ac", "1", "-c:a", "pcm_s16le", str(dst)])
-    if dst.exists() and dst.stat().st_size > 44:
+    if dst.exists() and dst.stat().st_size > 4096:
         return True
-    # voicemic CAFs are 9-channel (voice-processing unit: mic + reference
-    # channels) — ffmpeg cannot auto-downmix that layout and writes NOTHING.
-    # Channel 0 is the processed voice: take it explicitly.
+    # voicemic CAFs are multi-channel (7 or 9 ch, voice-processing unit: mic
+    # + reference channels) — ffmpeg cannot auto-downmix that layout and
+    # writes only a header (≤4 KB). Channel 0 is the processed voice: take it explicitly.
     run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", str(src),
          "-af", "pan=mono|c0=c0", "-ar", str(rate),
          "-c:a", "pcm_s16le", str(dst)])
@@ -104,7 +104,7 @@ def drop_silent_segments(segs: list[dict], wav16: Path) -> list[dict]:
             continue
         rms = float(np.sqrt(np.mean(clip ** 2)))
         db = 20 * np.log10(rms + 1e-9)
-        if db >= -48:
+        if db >= -58:
             kept.append(s)
     return kept
 
