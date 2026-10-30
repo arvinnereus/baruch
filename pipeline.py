@@ -428,19 +428,23 @@ def note_markdown(title: str, note: dict) -> str:
     md = [f"# {title}", "", "## Summary", note.get("summary", ""), ""]
     if "action_items" in note:
         md += ["## Action items"]
-        md += ([f"- [ ] {a['text']} ({a.get('ts','')})" for a in note.get("action_items") or []]
+        md += ([f"- [ ] {a.get('text','') or next((v for v in a.values() if isinstance(v,str)),'')} ({a.get('ts','')})"
+                for a in note.get("action_items") or [] if isinstance(a, dict)]
                or ["*No action items detected.*"]) + [""]
     if "decisions" in note:
         md += ["## Decisions"]
-        md += ([f"- {d['text']} ({d.get('ts','')})" for d in note.get("decisions") or []]
+        md += ([f"- {d.get('text','') or next((v for v in d.values() if isinstance(v,str)),'')} ({d.get('ts','')})"
+                for d in note.get("decisions") or [] if isinstance(d, dict)]
                or ["*No decisions detected.*"]) + [""]
     for sec in note.get("sections") or []:
         md += [f"## {sec['title']}"]
-        md += ([f"- {b['text']} ({b.get('ts','')})" for b in sec.get("bullets") or []]
+        md += ([f"- {b.get('text','') or next((v for v in b.values() if isinstance(v,str)),'')} ({b.get('ts','')})"
+                for b in sec.get("bullets") or [] if isinstance(b, dict)]
                or ["*None noted.*"]) + [""]
     for t in note.get("topics", []):
         md += [f"## {t.get('title','Topic')}"] + \
-            [f"- {b['text']} ({b.get('ts','')})" for b in t.get("bullets", [])] + [""]
+            [f"- {b.get('text','') or next((v for v in b.values() if isinstance(v,str)),'')} ({b.get('ts','')})"
+             for b in t.get("bullets", []) if isinstance(b, dict)] + [""]
     return "\n".join(md)
 
 
